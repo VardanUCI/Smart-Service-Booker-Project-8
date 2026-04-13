@@ -39,6 +39,11 @@ const notificationColors = {
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const smsPreviewMessages = notifications.slice(0, 2).map((notification) => ({
+    id: notification.id,
+    body: `Smart Service Booker: ${notification.message}`,
+    timestamp: notification.timestamp,
+  }));
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -167,20 +172,25 @@ export default function NotificationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="max-w-xs">
-                  <div className="bg-primary text-primary-foreground p-3 rounded-2xl rounded-bl-md text-sm">
-                    Smart Service Booker: A spot just opened at Bella Nail Studio! Reply YES to confirm or NO to stay on the waitlist.
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Today, 2:34 PM</p>
+              {smsPreviewMessages.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-6 text-center">
+                  <p className="font-medium text-foreground">No SMS preview available yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Once notification events are available, SMS previews will appear here.
+                  </p>
                 </div>
-                <div className="max-w-xs">
-                  <div className="bg-primary text-primary-foreground p-3 rounded-2xl rounded-bl-md text-sm">
-                    Smart Service Booker: You moved up! Now #2 in line at Pawsome Veterinary Clinic. Est. wait: 30 min.
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Today, 1:15 PM</p>
+              ) : (
+                <div className="space-y-4">
+                  {smsPreviewMessages.map((message) => (
+                    <div key={message.id} className="max-w-xs">
+                      <div className="bg-primary text-primary-foreground p-3 rounded-2xl rounded-bl-md text-sm">
+                        {message.body}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{message.timestamp}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
               <p className="text-xs text-muted-foreground mt-6 text-center">
                 SMS notifications require Twilio integration (coming soon)
               </p>
