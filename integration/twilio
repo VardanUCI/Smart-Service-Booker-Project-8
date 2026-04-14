@@ -1,0 +1,392 @@
+// =============================================================================
+// TWILIO SMS INTEGRATION — Smart Service Booker
+// =============================================================================
+//
+// PURPOSE:
+//   This module provides SMS notification capabilities for the Smart Service
+//   Booker app. It sends real-time text messages to seekers and providers when
+//   key events happen — a waitlist spot opens, a booking is confirmed, a
+//   reminder is due, or a new service request arrives.
+//
+//   The functions here map directly to the notification types defined in
+//   lib/mock-data.ts (`Notification.type`):
+//
+//     'spot-available'  →  sendSpotAvailableSMS()
+//     'confirmation'    →  sendBookingConfirmationSMS()
+//     'reminder'        →  sendReminderSMS()
+//     'request'         →  sendProviderRequestSMS()
+//     'update'          →  sendGenericSMS() (catch-all for general updates)
+//
+//   The notifications page (app/notifications/page.tsx) already shows an
+//   "SMS Notifications Preview" card that formats messages with the prefix
+//   "Smart Service Booker: ..." — every function below follows that same
+//   format so the preview matches what users actually receive.
+//
+// -----------------------------------------------------------------------------
+// SETUP INSTRUCTIONS (do these once before using this module):
+// -----------------------------------------------------------------------------
+//
+//   1. CREATE A TWILIO ACCOUNT
+//      Go to https://www.twilio.com/try-twilio and sign up for a free account.
+//      The free trial gives you a $15 credit to test with.
+//
+//   2. GET YOUR CREDENTIALS
+//      After signing up, go to the Twilio Console dashboard:
+//      https://console.twilio.com/
+//      You'll find two values on this page:
+//        - Account SID  (starts with "AC...")
+//        - Auth Token   (click "Show" to reveal it)
+//
+//   3. GET A TWILIO PHONE NUMBER
+//      In the Console, go to Phone Numbers → Manage → Buy a Number.
+//      Pick any number with SMS capability. This is the "from" number
+//      that will appear when users receive texts.
+//      On the free trial, you can get one number for free.
+//
+//   4. ADD ENVIRONMENT VARIABLES
+//      Create a `.env.local` file in the project root (it's already in
+//      .gitignore so your secrets stay safe) and add these three lines:
+//
+//        TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+//        TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+//        TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
+//
+//      Next.js automatically loads `.env.local` on the server side.
+//      These variables are ONLY available in server-side code (API routes,
+//      Server Components, server actions) — they are never exposed to the
+//      browser, which is exactly what we want for security.
+//
+//   5. INSTALL THE TWILIO SDK
+//      Run this in the project root:
+//
+//        npm install twilio
+//
+//   6. FREE TRIAL LIMITATION
+//      On Twilio's free trial, you can only send SMS to phone numbers you've
+//      verified. Go to Console → Verified Caller IDs to add test numbers.
+//      Once you upgrade your account, you can send to any number.
+//
+// =============================================================================
+
+import twilio from 'twilio';
+
+// -----------------------------------------------------------------------------
+// CLIENT INITIALIZATION
+// -----------------------------------------------------------------------------
+//
+// We read credentials from environment variables set in `.env.local`.
+// The Twilio client is initialized once and reused for all SMS sends.
+//
+// WHY SERVER-SIDE ONLY:
+//   This file must ONLY be imported in server-side code (API routes, server
+//   actions, etc.). Importing it on the client side will fail because:
+//     a) The env vars are not available in the browser
+//     b) The `twilio` npm package is a Node.js library
+//
+// HOW IT CONNECTS TO THE APP:
+//   The notifications page (app/notifications/page.tsx) currently uses mock
+//   data and shows SMS previews. To make it real, you would:
+//     1. Create an API route (e.g., app/api/notifications/sms/route.ts)
+//     2. Import the send functions from this file
+//     3. Call them when waitlist/booking events occur
+//   See the USAGE EXAMPLES section at the bottom of this file.
+// -----------------------------------------------------------------------------
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+
+// Validate that all required environment variables are present.
+// This gives a clear error message instead of a cryptic Twilio SDK failure.
+if (!accountSid || !authToken || !twilioPhoneNumber) {
+  console.warn(
+    '[Twilio] Missing environment variables. SMS sending is disabled.\n' +
+    'To enable SMS, add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and\n' +
+    'TWILIO_PHONE_NUMBER to your .env.local file.\n' +
+    'See integration/twilio for full setup instructions.'
+  );
+}
+
+// Create the Twilio client instance.
+// If credentials are missing, the client will be null and all send functions
+// will gracefully return an error instead of crashing.
+const client = accountSid && authToken
+  ? twilio(accountSid, authToken)
+  : null;
+
+
+// =============================================================================
+// CORE SMS FUNCTION
+// =============================================================================
+//
+// All the specialized functions below call this one. It handles:
+//   - Checking that the Twilio client is initialized
+//   - Sending the message via the Twilio API
+//   - Returning a consistent result shape with success/error info
+//   - Logging for debugging
+//
+// PARAMETERS:
+//   to   — The recipient's phone number in E.164 format (e.g., "+12125551234")
+//           This comes from the seeker/provider profile. In the mock data,
+//           see `Provider.phone` and `SeekerRequest.phone` in lib/mock-data.ts.
+//   body — The SMS text content. Max 1600 characters (Twilio splits longer
+//           messages automatically, but keep it concise for UX).
+//
+// RETURNS:
+//   { success: true, messageId: string }  on success
+//   { success: false, error: string }     on failure
+// =============================================================================
+
+async function sendSMS(to, body) {
+  // Guard: if Twilio is not configured, fail gracefully
+  if (!client) {
+    const errorMsg = '[Twilio] Client not initialized — missing env variables. SMS not sent.';
+    console.error(errorMsg);
+    return { success: false, error: errorMsg };
+  }
+
+  try {
+    const message = await client.messages.create({
+      body,                       // The SMS text content
+      from: twilioPhoneNumber,    // Your Twilio phone number (the sender)
+      to,                         // The recipient's phone number
+    });
+
+    // Log success for debugging. The SID is Twilio's unique message ID
+    // and can be used to look up delivery status in the Twilio Console.
+    console.log(`[Twilio] SMS sent successfully — SID: ${message.sid}, To: ${to}`);
+
+    return { success: true, messageId: message.sid };
+  } catch (error) {
+    // Common errors:
+    //   - 21211: Invalid 'To' phone number
+    //   - 21608: The 'From' number is not a valid Twilio number
+    //   - 21610: Recipient has opted out (replied STOP)
+    //   - 20003: Authentication failure (bad SID or token)
+    console.error(`[Twilio] Failed to send SMS to ${to}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+
+// =============================================================================
+// NOTIFICATION-SPECIFIC SMS FUNCTIONS
+// =============================================================================
+//
+// Each function below corresponds to a notification type from the app.
+// They format the message to match the "Smart Service Booker: ..." prefix
+// used in the notifications page SMS preview (app/notifications/page.tsx,
+// lines 42-46).
+//
+// The parameter names map to fields from the mock data types in
+// lib/mock-data.ts — so when you replace mock data with real data,
+// you can pass the same object fields directly.
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// 1. SPOT AVAILABLE — Notification type: 'spot-available'
+// -----------------------------------------------------------------------------
+// WHEN TO CALL:
+//   A seeker is on a waitlist (`UserWaitlist` in mock-data.ts) and a spot
+//   just opened up. This is the core value prop of the app — instant alerts
+//   when availability changes.
+//
+// WHERE IT'S TRIGGERED:
+//   Called from the provider side when they mark a slot as available, or
+//   when a previous booking is cancelled. This would be wired up in a
+//   server action or API route that handles provider availability updates.
+//
+// PARAMETERS:
+//   to           — Seeker's phone (E.164 format, e.g. "+12125551234")
+//   providerName — Name of the service provider (maps to Provider.name)
+//   serviceName  — The specific service (maps to UserWaitlist.service)
+//   timeSlot     — When the spot is available (e.g. "Today at 2:30 PM")
+// -----------------------------------------------------------------------------
+export async function sendSpotAvailableSMS(to, providerName, serviceName, timeSlot) {
+  const body =
+    `Smart Service Booker: Great news! A spot opened up at ${providerName} ` +
+    `for ${serviceName}. Available: ${timeSlot}. ` +
+    `Open the app to confirm your booking before it's taken!`;
+
+  return sendSMS(to, body);
+}
+
+
+// -----------------------------------------------------------------------------
+// 2. BOOKING CONFIRMATION — Notification type: 'confirmation'
+// -----------------------------------------------------------------------------
+// WHEN TO CALL:
+//   After a seeker successfully books a slot (either from the waitlist or
+//   directly). Serves as a receipt and reminder of what they booked.
+//
+// WHERE IT'S TRIGGERED:
+//   Called when the booking is finalized — after the seeker accepts an
+//   available spot and the provider confirms. Would be in the API route
+//   that processes booking confirmations.
+//
+// PARAMETERS:
+//   to           — Seeker's phone number
+//   providerName — Name of the provider (Provider.name)
+//   serviceName  — The booked service
+//   dateTime     — Appointment date and time (e.g. "Mon, Apr 14 at 3:00 PM")
+//   address      — Provider's address (Provider.address) for easy reference
+// -----------------------------------------------------------------------------
+export async function sendBookingConfirmationSMS(to, providerName, serviceName, dateTime, address) {
+  const body =
+    `Smart Service Booker: Booking confirmed! ` +
+    `${serviceName} at ${providerName}, ${dateTime}. ` +
+    `Address: ${address}. ` +
+    `Reply HELP for assistance or STOP to opt out.`;
+
+  return sendSMS(to, body);
+}
+
+
+// -----------------------------------------------------------------------------
+// 3. APPOINTMENT REMINDER — Notification type: 'reminder'
+// -----------------------------------------------------------------------------
+// WHEN TO CALL:
+//   Before an upcoming appointment — typically 24 hours and/or 1 hour before.
+//   Reduces no-shows, which is valuable for both seekers and providers.
+//
+// WHERE IT'S TRIGGERED:
+//   Called by a scheduled job (e.g., a cron-triggered API route or a
+//   Vercel Cron Job) that checks upcoming bookings and sends reminders
+//   at the configured intervals.
+//
+// PARAMETERS:
+//   to           — Seeker's phone number
+//   providerName — Name of the provider
+//   serviceName  — The booked service
+//   dateTime     — When the appointment is (e.g. "Tomorrow at 10:00 AM")
+// -----------------------------------------------------------------------------
+export async function sendReminderSMS(to, providerName, serviceName, dateTime) {
+  const body =
+    `Smart Service Booker: Reminder — you have ${serviceName} ` +
+    `at ${providerName} coming up: ${dateTime}. ` +
+    `Need to reschedule? Open the app to manage your booking.`;
+
+  return sendSMS(to, body);
+}
+
+
+// -----------------------------------------------------------------------------
+// 4. PROVIDER REQUEST NOTIFICATION — Notification type: 'request'
+// -----------------------------------------------------------------------------
+// WHEN TO CALL:
+//   A new seeker has submitted a service request (`SeekerRequest` in
+//   mock-data.ts) that matches this provider. Alerts the provider so
+//   they can accept or decline the request quickly.
+//
+// WHERE IT'S TRIGGERED:
+//   Called from the seeker search/request flow — when a seeker submits
+//   a request on the search page (app/seeker/search/), the server-side
+//   handler notifies matching providers via SMS.
+//
+// PARAMETERS:
+//   to          — Provider's phone number (Provider.phone)
+//   seekerName  — Name of the person requesting (SeekerRequest.name)
+//   serviceName — Requested service (SeekerRequest.service)
+//   urgency     — How urgent: "now", "today", "this-week", "flexible"
+//                  (maps to SeekerRequest.urgency / urgencyLevels in mock-data)
+// -----------------------------------------------------------------------------
+export async function sendProviderRequestSMS(to, seekerName, serviceName, urgency) {
+  const body =
+    `Smart Service Booker: New request! ${seekerName} is looking for ` +
+    `${serviceName} (urgency: ${urgency}). ` +
+    `Open the app to view details and respond.`;
+
+  return sendSMS(to, body);
+}
+
+
+// -----------------------------------------------------------------------------
+// 5. GENERIC / UPDATE SMS — Notification type: 'update'
+// -----------------------------------------------------------------------------
+// WHEN TO CALL:
+//   For general-purpose notifications that don't fit the categories above.
+//   Examples: waitlist position updates, policy changes, system announcements.
+//
+// PARAMETERS:
+//   to      — Recipient's phone number
+//   message — The notification message (maps to Notification.message)
+// -----------------------------------------------------------------------------
+export async function sendGenericSMS(to, message) {
+  const body = `Smart Service Booker: ${message}`;
+  return sendSMS(to, body);
+}
+
+
+// =============================================================================
+// USAGE EXAMPLES
+// =============================================================================
+//
+// Below are concrete examples showing how to import and call these functions
+// from Next.js server-side code. These are NOT executed — they're reference
+// code for when you wire up real event handling.
+//
+// ─── Example 1: API Route for spot-available notifications ───────────────────
+//
+//   // File: app/api/notifications/spot-available/route.ts
+//
+//   import { sendSpotAvailableSMS } from '@/integration/twilio';
+//
+//   export async function POST(request: Request) {
+//     const { seekerPhone, providerName, service, timeSlot } =
+//       await request.json();
+//
+//     const result = await sendSpotAvailableSMS(
+//       seekerPhone,    // e.g. "+12125551234"
+//       providerName,   // e.g. "Happy Paws Vet Clinic"
+//       service,        // e.g. "General Checkup"
+//       timeSlot        // e.g. "Today at 2:30 PM"
+//     );
+//
+//     if (result.success) {
+//       return Response.json({ sent: true, messageId: result.messageId });
+//     } else {
+//       return Response.json({ sent: false, error: result.error }, { status: 500 });
+//     }
+//   }
+//
+//
+// ─── Example 2: Server Action for booking confirmation ───────────────────────
+//
+//   // Inside a Server Component or server action file:
+//
+//   'use server';
+//   import { sendBookingConfirmationSMS } from '@/integration/twilio';
+//
+//   export async function confirmBooking(formData: FormData) {
+//     const phone = formData.get('phone') as string;
+//     // ... save booking to database ...
+//
+//     await sendBookingConfirmationSMS(
+//       phone,
+//       'Downtown Dental Care',
+//       'Dental Cleaning',
+//       'Mon, Apr 14 at 3:00 PM',
+//       '123 Main St, Suite 200'
+//     );
+//   }
+//
+//
+// ─── Example 3: Connecting to the notifications page ─────────────────────────
+//
+//   The notifications page (app/notifications/page.tsx) currently displays
+//   an "SMS Notifications Preview" section using mock data. To make it real:
+//
+//   1. When a notification event occurs (e.g., spot opens), call the
+//      appropriate send function from this file on the server side.
+//
+//   2. Store the notification in your database with the same shape as
+//      the `Notification` interface in lib/mock-data.ts.
+//
+//   3. The notifications page will fetch and display real notifications
+//      once you replace `mockNotifications` with a database query.
+//
+//   4. The SMS preview section will automatically format using the same
+//      "Smart Service Booker: ..." prefix that these functions use.
+//
+// =============================================================================
