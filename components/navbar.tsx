@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Bell, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { mockNotifications } from '@/lib/mock-data';
 
 const navLinks = [
   { href: '/seeker/search', label: 'Find Services' },
@@ -15,6 +16,7 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const unreadNotificationCount = mockNotifications.filter((notification) => !notification.read).length;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -46,9 +48,11 @@ export function Navbar() {
             <Link href="/notifications">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                  3
-                </Badge>
+                {unreadNotificationCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
+                    {unreadNotificationCount}
+                  </Badge>
+                )}
                 <span className="sr-only">Notifications</span>
               </Button>
             </Link>
@@ -63,9 +67,11 @@ export function Navbar() {
             <Link href="/notifications">
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                  3
-                </Badge>
+                {unreadNotificationCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
+                    {unreadNotificationCount}
+                  </Badge>
+                )}
               </Button>
             </Link>
             <Sheet open={isOpen} onOpenChange={setIsOpen}>

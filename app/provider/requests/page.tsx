@@ -57,7 +57,7 @@ export default function RequestsPage() {
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<'accept' | 'notify' | 'dismiss'>('accept');
 
-  const pendingRequests = requests.filter((r) => true); // All are pending in mock
+  const pendingRequests = requests;
   const sortedRequests = [...pendingRequests].sort(
     (a, b) => urgencyConfig[a.urgency].priority - urgencyConfig[b.urgency].priority
   );

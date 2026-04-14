@@ -20,30 +20,6 @@ import {
 } from 'lucide-react';
 import { mockProviderStats, mockSeekerRequests, mockNearbyDemand } from '@/lib/mock-data';
 
-const quickActions = [
-  {
-    title: 'Add Availability',
-    description: 'Open up new time slots',
-    icon: Calendar,
-    href: '/provider/availability',
-    variant: 'default' as const,
-  },
-  {
-    title: 'Mark Available Now',
-    description: 'Accept walk-ins right now',
-    icon: Zap,
-    href: '/provider/availability',
-    variant: 'outline' as const,
-  },
-  {
-    title: 'View Requests',
-    description: `${mockProviderStats.pendingRequests} pending`,
-    icon: Users,
-    href: '/provider/requests',
-    variant: 'outline' as const,
-  },
-];
-
 const urgencyColors = {
   now: 'bg-red-100 text-red-700',
   today: 'bg-amber-100 text-amber-700',
@@ -52,6 +28,38 @@ const urgencyColors = {
 };
 
 export default function ProviderDashboard() {
+  const openSlots = mockProviderStats.openSlots ?? 0;
+  const pendingRequests = mockProviderStats.pendingRequests ?? mockSeekerRequests.length;
+  const activeWaitlists = mockProviderStats.activeWaitlists ?? 0;
+  const fillRate = mockProviderStats.fillRate ?? 0;
+  const todayAppointments = mockProviderStats.todayAppointments ?? 0;
+  const weeklyBookings = mockProviderStats.weeklyBookings ?? 0;
+  const notificationCount = pendingRequests;
+
+  const quickActions = [
+    {
+      title: 'Add Availability',
+      description: 'Open up new time slots',
+      icon: Calendar,
+      href: '/provider/availability',
+      variant: 'default' as const,
+    },
+    {
+      title: 'Mark Available Now',
+      description: 'Accept walk-ins right now',
+      icon: Zap,
+      href: '/provider/availability',
+      variant: 'outline' as const,
+    },
+    {
+      title: 'View Requests',
+      description: `${pendingRequests} pending`,
+      icon: Users,
+      href: '/provider/requests',
+      variant: 'outline' as const,
+    },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
@@ -61,16 +69,18 @@ export default function ProviderDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, Pawsome Veterinary Clinic</p>
+              <p className="text-muted-foreground">Welcome back</p>
             </div>
             <div className="flex gap-3">
               <Link href="/notifications">
                 <Button variant="outline" size="sm" className="relative">
                   <Bell className="h-4 w-4 mr-2" />
                   Notifications
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                    5
-                  </Badge>
+                  {notificationCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
+                      {notificationCount}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
               <Link href="/provider/availability">
@@ -90,7 +100,7 @@ export default function ProviderDashboard() {
                   <span className="text-sm text-muted-foreground">Open Slots</span>
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="text-3xl font-bold text-foreground">{mockProviderStats.openSlots}</p>
+                <p className="text-3xl font-bold text-foreground">{openSlots}</p>
                 <p className="text-xs text-muted-foreground mt-1">Today</p>
               </CardContent>
             </Card>
@@ -101,7 +111,7 @@ export default function ProviderDashboard() {
                   <span className="text-sm text-muted-foreground">Pending Requests</span>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="text-3xl font-bold text-foreground">{mockProviderStats.pendingRequests}</p>
+                <p className="text-3xl font-bold text-foreground">{pendingRequests}</p>
                 <p className="text-xs text-primary mt-1">Action needed</p>
               </CardContent>
             </Card>
@@ -112,7 +122,7 @@ export default function ProviderDashboard() {
                   <span className="text-sm text-muted-foreground">Active Waitlists</span>
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="text-3xl font-bold text-foreground">{mockProviderStats.activeWaitlists}</p>
+                <p className="text-3xl font-bold text-foreground">{activeWaitlists}</p>
                 <p className="text-xs text-muted-foreground mt-1">People waiting</p>
               </CardContent>
             </Card>
@@ -123,8 +133,8 @@ export default function ProviderDashboard() {
                   <span className="text-sm text-muted-foreground">Fill Rate</span>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="text-3xl font-bold text-foreground">{mockProviderStats.fillRate}%</p>
-                <Progress value={mockProviderStats.fillRate} className="h-1.5 mt-2" />
+                <p className="text-3xl font-bold text-foreground">{fillRate}%</p>
+                <Progress value={fillRate} className="h-1.5 mt-2" />
               </CardContent>
             </Card>
           </div>
@@ -169,30 +179,39 @@ export default function ProviderDashboard() {
                   </Link>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {mockSeekerRequests.slice(0, 4).map((request) => (
-                      <div
-                        key={request.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                            {request.name.charAt(0)}
+                  {mockSeekerRequests.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-6 text-center">
+                      <p className="font-medium text-foreground">No recent requests yet</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        New incoming requests from customers will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {mockSeekerRequests.slice(0, 4).map((request) => (
+                        <div
+                          key={request.id}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                              {request.name.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{request.name}</p>
+                              <p className="text-sm text-muted-foreground">{request.service}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{request.name}</p>
-                            <p className="text-sm text-muted-foreground">{request.service}</p>
+                          <div className="text-right">
+                            <Badge className={urgencyColors[request.urgency]}>
+                              {request.urgency === 'now' ? 'Urgent' : request.urgency.replace('-', ' ')}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">{request.requestedAt}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Badge className={urgencyColors[request.urgency]}>
-                            {request.urgency === 'now' ? 'Urgent' : request.urgency.replace('-', ' ')}
-                          </Badge>
-                          <p className="text-xs text-muted-foreground mt-1">{request.requestedAt}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -209,25 +228,34 @@ export default function ProviderDashboard() {
                   <CardDescription>People looking for services near you</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {mockNearbyDemand.map((demand) => (
-                      <div
-                        key={demand.id}
-                        className="p-3 bg-muted/50 rounded-lg"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-foreground">{demand.service}</span>
-                          <Badge className={urgencyColors[demand.urgency]}>
-                            {demand.urgency === 'now' ? 'Now' : demand.urgency.replace('-', ' ')}
-                          </Badge>
+                  {mockNearbyDemand.length === 0 ? (
+                    <div className="rounded-lg border border-dashed p-6 text-center">
+                      <p className="font-medium text-foreground">No nearby demand data yet</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Demand insights will appear here once backend data is connected.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {mockNearbyDemand.map((demand) => (
+                        <div
+                          key={demand.id}
+                          className="p-3 bg-muted/50 rounded-lg"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-foreground">{demand.service}</span>
+                            <Badge className={urgencyColors[demand.urgency]}>
+                              {demand.urgency === 'now' ? 'Now' : demand.urgency.replace('-', ' ')}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <span>{demand.seekerCount} people looking</span>
+                            <span>{demand.area}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <span>{demand.seekerCount} people looking</span>
-                          <span>{demand.area}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground mt-4 text-center">
                     Expand your reach by offering mobile services
                   </p>
@@ -243,15 +271,15 @@ export default function ProviderDashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between py-2 border-b">
                       <span className="text-sm text-muted-foreground">Appointments</span>
-                      <span className="font-semibold">{mockProviderStats.todayAppointments}</span>
+                      <span className="font-semibold">{todayAppointments}</span>
                     </div>
                     <div className="flex items-center justify-between py-2 border-b">
                       <span className="text-sm text-muted-foreground">Open Slots</span>
-                      <span className="font-semibold">{mockProviderStats.openSlots}</span>
+                      <span className="font-semibold">{openSlots}</span>
                     </div>
                     <div className="flex items-center justify-between py-2">
                       <span className="text-sm text-muted-foreground">This Week</span>
-                      <span className="font-semibold">{mockProviderStats.weeklyBookings} booked</span>
+                      <span className="font-semibold">{weeklyBookings} booked</span>
                     </div>
                   </div>
                   <Link href="/provider/availability">
