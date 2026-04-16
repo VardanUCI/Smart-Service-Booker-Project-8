@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Users ───────────────────────────────────────────────────────────────
+    // Owners can read and write their own document only.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ─── Services ─────────────────────────────────────────────────────────────
+    // Anyone can read services. Only the provider who owns the service can write.
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.providerUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.providerUid == request.auth.uid;
+
+      // Availability sub-collection: same ownership rules as the parent service.
+      match /availability/{date} {
+        allow read: if true;
+        allow write: if request.auth != null
+          && get(/databases/$(database)/documents/services/$(serviceId)).data.providerUid
+             == request.auth.uid;
+      }
+    }
+
+    // ─── Waitlist Entries ─────────────────────────────────────────────────────
+    // Authenticated users can create entries for themselves.
+    // Users can read their own entries.
+    // Updates and deletes are handled exclusively by Cloud Functions (admin SDK),
+    // which bypass these rules — so we deny them from the client.
+    match /waitlistEntries/{entryId} {
+      allow create: if request.auth != null
+        && request.resource.data.userUid == request.auth.uid;
+      allow read: if request.auth != null
+        && resource.data.userUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ─── Notifications ────────────────────────────────────────────────────────
+    // Writes come exclusively from Cloud Functions (admin SDK).
+    // Owning users can read their own notifications.
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null
+        && resource.data.userUid == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}
