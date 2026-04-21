@@ -3,8 +3,17 @@ next.user-config.*
 
 # Environment variables
 .env*.local
+.env
+.env.local
 
 # Common ignores
 node_modules
 .next/
 .DS_Store
+
+package-lock.json
+package.json
+pnpm-lock.yaml
+yarn.lock
+
+.nvmrc
