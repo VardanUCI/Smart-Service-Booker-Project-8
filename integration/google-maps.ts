@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // =============================================================================
 // GOOGLE MAPS — NEARBY BUSINESS SEARCH — Smart Service Booker
 // =============================================================================
@@ -85,7 +86,14 @@ import type { CategoryId } from '@/lib/mock-data';
 //   See the USAGE EXAMPLES section at the bottom of this file.
 // -----------------------------------------------------------------------------
 
-const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+// Access the API key via globalThis.process so TypeScript resolves it using
+// the esnext lib (already in tsconfig) without needing @types/node added to
+// the lib array. At runtime, Next.js populates process.env on the server
+// exactly as normal — this is purely a TypeScript-visibility workaround.
+const apiKey: string | undefined = (
+  (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.GOOGLE_MAPS_API_KEY
+);
 
 if (!apiKey) {
   console.warn(
