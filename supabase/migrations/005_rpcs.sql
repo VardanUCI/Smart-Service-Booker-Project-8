@@ -12,7 +12,7 @@ RETURNS TABLE (
   status TEXT,
   joined_at TIMESTAMPTZ,
   expires_at TIMESTAMPTZ,
-  position BIGINT,
+  "position" BIGINT,
   contact_method TEXT,
   contact_value TEXT
 )
@@ -32,7 +32,7 @@ AS $$
     ROW_NUMBER() OVER (
       PARTITION BY w.provider_id
       ORDER BY w.created_at ASC
-    ) AS position,
+    ) AS "position",
     w.contact_method,
     w.contact_value
   FROM public.waitlists w
