@@ -2,6 +2,49 @@ import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+const patchSchema = z.object({
+  is_available: z.boolean().optional(),
+  available_until: z.string().datetime().nullable().optional(),
+  business_name: z.string().min(1).optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+});
+
+export async function PATCH(request: NextRequest) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const result = patchSchema.safeParse(body);
+  if (!result.success) {
+    return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data: provider, error: updateError } = await supabase
+    .from('providers')
+    .update(result.data)
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (updateError) {
+    console.error('providers update error:', updateError);
+    return NextResponse.json({ error: 'Failed to update provider' }, { status: 500 });
+  }
+
+  return NextResponse.json({ provider });
+}
+
 const providerSchema = z.object({
   business_name: z.string().min(1, 'Business name is required'),
   category: z.string().min(1, 'Category is required'),
