@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 950" width="1000" height="950" font-family="Arial, sans-serif">
+
+  <!-- Background -->
+  <rect width="1000" height="950" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="500" y="32" text-anchor="middle" font-size="19" font-weight="bold" fill="#1a1a1a">Smart Service Booker — Use Case Diagram</text>
+
+  <!-- System boundary box -->
+  <rect x="195" y="50" width="580" height="878" rx="8" ry="8" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+  <text x="485" y="72" text-anchor="middle" font-size="13" font-weight="bold" fill="#475569">Smart Service Booker</text>
+
+  <!-- ══════════════════ USE CASE OVALS ══════════════════ -->
+
+  <!-- CUSTOMER USE CASES (blue) -->
+
+  <!-- UC-01 -->
+  <ellipse cx="485" cy="105" rx="130" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="485" y="109" text-anchor="middle" font-size="11" fill="#1e3a5f">UC-01: Register / Log In</text>
+
+  <!-- UC-02 -->
+  <ellipse cx="485" cy="163" rx="130" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="485" y="167" text-anchor="middle" font-size="11" fill="#1e3a5f">UC-02: Search for Services</text>
+
+  <!-- UC-03 -->
+  <ellipse cx="485" cy="221" rx="130" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="485" y="225" text-anchor="middle" font-size="11" fill="#1e3a5f">UC-03: Filter Search Results</text>
+
+  <!-- UC-04 -->
+  <ellipse cx="485" cy="279" rx="130" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="485" y="283" text-anchor="middle" font-size="11" fill="#1e3a5f">UC-04: Join Multi-Service Waitlist</text>
+
+  <!-- UC-05 -->
+  <ellipse cx="485" cy="337" rx="130" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="485" y="341" text-anchor="middle" font-size="11" fill="#1e3a5f">UC-05: View Waitlist Position</text>
+
+  <!-- UC-06 -->
+  <ellipse cx="485" cy="395" rx="130" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="485" y="399" text-anchor="middle" font-size="11" fill="#1e3a5f">UC-06: Confirm / Decline Match</text>
+
+  <!-- UC-07 -->
+  <ellipse cx="485" cy="453" rx="130" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="485" y="457" text-anchor="middle" font-size="11" fill="#1e3a5f">UC-07: Cancel Waitlist Entry</text>
+
+  <!-- PROVIDER USE CASES (green) -->
+
+  <!-- UC-08 -->
+  <ellipse cx="485" cy="530" rx="130" ry="22" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="485" y="534" text-anchor="middle" font-size="11" fill="#14532d">UC-08: Register Business</text>
+
+  <!-- UC-09 -->
+  <ellipse cx="485" cy="588" rx="130" ry="22" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="485" y="592" text-anchor="middle" font-size="11" fill="#14532d">UC-09: Manage Availability Slots</text>
+
+  <!-- UC-10 -->
+  <ellipse cx="485" cy="646" rx="130" ry="22" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="485" y="650" text-anchor="middle" font-size="11" fill="#14532d">UC-10: Toggle Waitlist Acceptance</text>
+
+  <!-- UC-11 -->
+  <ellipse cx="485" cy="704" rx="130" ry="22" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="485" y="708" text-anchor="middle" font-size="11" fill="#14532d">UC-11: View Waitlist Customers</text>
+
+  <!-- SYSTEM USE CASES (yellow) -->
+
+  <!-- UC-12 -->
+  <ellipse cx="485" cy="775" rx="130" ry="22" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="485" y="779" text-anchor="middle" font-size="11" fill="#713f12">UC-12: Auto-Match Customer to Slot</text>
+
+  <!-- UC-13 -->
+  <ellipse cx="485" cy="833" rx="130" ry="22" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="485" y="837" text-anchor="middle" font-size="11" fill="#713f12">UC-13: Reclaim Expired Matches</text>
+
+  <!-- UC-14 -->
+  <ellipse cx="485" cy="875" rx="130" ry="22" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="485" y="879" text-anchor="middle" font-size="11" fill="#713f12">UC-14: Rank Waitlist (FIFO)</text>
+
+  <!-- UC-15 -->
+  <ellipse cx="485" cy="917" rx="130" ry="22" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="485" y="921" text-anchor="middle" font-size="11" fill="#713f12">UC-15: Send SMS via Twilio</text>
+
+  <!-- ══════════════════ ACTORS ══════════════════ -->
+
+  <!-- Customer (left, mid-top) -->
+  <circle cx="80" cy="255" r="18" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="80" y1="273" x2="80" y2="315" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="55" y1="287" x2="105" y2="287" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="80" y1="315" x2="55" y2="348" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="80" y1="315" x2="105" y2="348" stroke="#1a1a1a" stroke-width="2"/>
+  <text x="80" y="368" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a1a">Customer</text>
+
+  <!-- Service Provider (left, lower) -->
+  <circle cx="80" cy="600" r="18" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="80" y1="618" x2="80" y2="660" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="55" y1="632" x2="105" y2="632" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="80" y1="660" x2="55" y2="693" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="80" y1="660" x2="105" y2="693" stroke="#1a1a1a" stroke-width="2"/>
+  <text x="80" y="713" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a1a">Service</text>
+  <text x="80" y="728" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a1a">Provider</text>
+
+  <!-- System (right) -->
+  <circle cx="880" cy="855" r="18" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="880" y1="873" x2="880" y2="905" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="855" y1="887" x2="905" y2="887" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="880" y1="905" x2="855" y2="930" stroke="#1a1a1a" stroke-width="2"/>
+  <line x1="880" y1="905" x2="905" y2="930" stroke="#1a1a1a" stroke-width="2"/>
+  <text x="880" y="943" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a1a">System</text>
+
+  <!-- ══════════════════ CONNECTIONS ══════════════════ -->
+
+  <!-- Customer → UC-01 through UC-07 -->
+  <line x1="98" y1="246" x2="355" y2="105" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="252" x2="355" y2="163" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="258" x2="355" y2="221" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="264" x2="355" y2="279" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="270" x2="355" y2="337" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="276" x2="355" y2="395" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="282" x2="355" y2="453" stroke="#64748b" stroke-width="1.2"/>
+
+  <!-- Service Provider → UC-01 (shared) -->
+  <line x1="98" y1="592" x2="355" y2="105" stroke="#64748b" stroke-width="1.2"/>
+  <!-- Service Provider → UC-08 through UC-11 -->
+  <line x1="98" y1="608" x2="355" y2="530" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="614" x2="355" y2="588" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="620" x2="355" y2="646" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="98" y1="626" x2="355" y2="704" stroke="#64748b" stroke-width="1.2"/>
+
+  <!-- System → UC-12 through UC-15 -->
+  <line x1="862" y1="847" x2="615" y2="775" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="862" y1="855" x2="615" y2="833" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="862" y1="861" x2="615" y2="875" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="862" y1="867" x2="615" y2="917" stroke="#64748b" stroke-width="1.2"/>
+
+  <!-- ══════════════════ US REFERENCE LABELS ══════════════════ -->
+  <text x="358" y="93"  font-size="9" fill="#94a3b8">US-01</text>
+  <text x="358" y="151" font-size="9" fill="#94a3b8">US-02</text>
+  <text x="358" y="209" font-size="9" fill="#94a3b8">US-08</text>
+  <text x="358" y="267" font-size="9" fill="#94a3b8">US-03</text>
+  <text x="358" y="325" font-size="9" fill="#94a3b8">US-07</text>
+  <text x="358" y="383" font-size="9" fill="#94a3b8">US-05</text>
+  <text x="358" y="441" font-size="9" fill="#94a3b8">US-06</text>
+  <text x="358" y="518" font-size="9" fill="#94a3b8">US-09</text>
+  <text x="358" y="576" font-size="9" fill="#94a3b8">US-10</text>
+  <text x="358" y="634" font-size="9" fill="#94a3b8">US-12</text>
+  <text x="358" y="692" font-size="9" fill="#94a3b8">US-13</text>
+  <text x="358" y="763" font-size="9" fill="#94a3b8">US-15</text>
+  <text x="358" y="821" font-size="9" fill="#94a3b8">US-16</text>
+  <text x="358" y="863" font-size="9" fill="#94a3b8">US-17</text>
+  <text x="358" y="905" font-size="9" fill="#94a3b8">US-18</text>
+
+  <!-- ══════════════════ LEGEND ══════════════════ -->
+  <rect x="205" y="82" width="12" height="10" rx="2" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <text x="221" y="91" font-size="10" fill="#475569">Customer (US-01–08)</text>
+  <rect x="340" y="82" width="12" height="10" rx="2" fill="#dcfce7" stroke="#22c55e" stroke-width="1"/>
+  <text x="356" y="91" font-size="10" fill="#475569">Provider (US-09–14)</text>
+  <rect x="475" y="82" width="12" height="10" rx="2" fill="#fef9c3" stroke="#eab308" stroke-width="1"/>
+  <text x="491" y="91" font-size="10" fill="#475569">System (US-15–18)</text>
+
+</svg>
