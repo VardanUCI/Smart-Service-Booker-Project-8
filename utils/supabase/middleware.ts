@@ -1,16 +1,28 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+type SessionUpdateResult = {
+  response: NextResponse
+  userId: string | null
+}
+
 // This refreshes the user's session cookie on every request so they stay logged in while navigating
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest): Promise<SessionUpdateResult> {
   let supabaseResponse = NextResponse.next({
     request,
   })
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Avoid crashing middleware in local dev when Supabase env vars are not set yet.
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return { response: supabaseResponse, userId: null }
+  }
 
   // Creates the supabase server client w/ env variables for url & anon key
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         // get all cookies from incoming request
@@ -31,8 +43,11 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refreshes the session token to keep user authenticated 
-  await supabase.auth.getUser()
+  // Refreshes the session token to keep user authenticated.
+  const { data, error } = await supabase.auth.getUser()
+  if (error) {
+    return { response: supabaseResponse, userId: null }
+  }
 
-  return supabaseResponse
+  return { response: supabaseResponse, userId: data.user?.id ?? null }
 }

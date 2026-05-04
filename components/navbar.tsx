@@ -56,7 +56,9 @@ export function Navbar() {
                 <span className="sr-only">Notifications</span>
               </Button>
             </Link>
-            <Button variant="outline" size="sm">Sign In</Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/signin">Sign In</Link>
+            </Button>
             <Button asChild size="sm" className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
               <Link href="/seeker/search">Get Started</Link>
             </Button>
@@ -94,7 +96,11 @@ export function Navbar() {
                     </Link>
                   ))}
                   <hr className="my-2 border-border" />
-                  <Button variant="outline" className="w-full">Sign In</Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href="/signin" onClick={() => setIsOpen(false)}>
+                      Sign In
+                    </Link>
+                  </Button>
                   <Button asChild className="w-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98]">
                     <Link href="/seeker/search" onClick={() => setIsOpen(false)}>
                       Get Started

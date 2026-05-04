@@ -73,19 +73,19 @@ export function HeroSection() {
           >
             <div className="flex items-center gap-2.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
               <Users className="h-5 w-5" style={{ color: '#93c5fd' }} />
-              <span className="text-sm font-medium">10,000+ users served</span>
+              <span className="text-sm font-medium">One search, multiple waitlists</span>
             </div>
             <div className="flex items-center gap-2.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
               <Star className="h-5 w-5" style={{ color: '#fde68a' }} />
-              <span className="text-sm font-medium">4.9 avg. rating</span>
+              <span className="text-sm font-medium">No more phone tag</span>
             </div>
             <div className="flex items-center gap-2.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
               <Search className="h-5 w-5" style={{ color: '#6ee7b7' }} />
-              <span className="text-sm font-medium">500+ local providers</span>
+              <span className="text-sm font-medium">Live availability alerts</span>
             </div>
             <div className="flex items-center gap-2.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
               <Clock className="h-5 w-5" style={{ color: '#c4b5fd' }} />
-              <span className="text-sm font-medium">Avg. 2 min to join</span>
+              <span className="text-sm font-medium">Built for local services</span>
             </div>
           </div>
         </div>
