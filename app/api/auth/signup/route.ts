@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Signup failed — no user returned' }, { status: 500 });
   }
 
-  const { error: insertError } = await supabase.from('users').insert({
+  const { error: insertError } = await supabase.from('users').upsert({
     id: userId,
     name,
     phone: phone ?? null,
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (insertError) {
-    console.error('users insert error:', insertError);
+    console.error('users upsert error:', insertError);
     return NextResponse.json({ error: 'Failed to create user profile' }, { status: 500 });
   }
 
