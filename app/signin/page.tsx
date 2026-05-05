@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, Suspense, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock, LogIn, UserPlus, Building2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { createClient } from '@/utils/supabase/client';
 
 function getSafeRedirect(nextValue: string | null) {
   if (!nextValue || !nextValue.startsWith('/')) return '/seeker/search';
@@ -21,6 +22,14 @@ function SignInContent() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setIsSignedIn(!!data.user);
+    });
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -129,12 +138,14 @@ function SignInContent() {
               </div>
             </div>
 
-            <p className="mt-4 text-sm text-muted-foreground">
-              Need to sign out?{' '}
-              <Link href="/signout" className="text-primary hover:underline">
-                Go to sign out
-              </Link>
-            </p>
+            {isSignedIn && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Need to sign out?{' '}
+                <Link href="/signout" className="text-primary hover:underline">
+                  Go to sign out
+                </Link>
+              </p>
+            )}
           </CardContent>
         </Card>
 
