@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getBusinessAccount } from '@/lib/auth/server';
 
 const patchSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -18,16 +19,16 @@ export async function DELETE(
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
   const { error } = await supabase
     .from('availability_slots')
     .delete()
     .eq('id', id)
-    .eq('provider_id', user.id);
+    .eq('provider_id', account.user.id);
 
   if (error) {
     console.error('availability_slots delete error:', error);
@@ -57,16 +58,16 @@ export async function PATCH(
 
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
   const { data: slot, error: updateError } = await supabase
     .from('availability_slots')
     .update(result.data)
     .eq('id', id)
-    .eq('provider_id', user.id)
+    .eq('provider_id', account.user.id)
     .select()
     .single();
 

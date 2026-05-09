@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Clock, LogIn, UserPlus, Building2, User } from 'lucide-react';
+import { Clock, LogIn, Building2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/utils/supabase/client';
+import { PasswordInput } from '@/components/password-input';
 
 function getSafeRedirect(nextValue: string | null) {
   if (!nextValue || !nextValue.startsWith('/')) return '/seeker/search';
@@ -43,13 +44,21 @@ function SignInContent() {
         body: JSON.stringify({ email, password }),
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as {
+        error?: string;
+        user?: { role?: 'user' | 'business'; onboarding_completed?: boolean };
+      };
       if (!response.ok) {
         setError(payload.error ?? 'Sign in failed');
         return;
       }
 
-      const nextPath = getSafeRedirect(searchParams.get('next'));
+      const requestedNext = searchParams.get('next');
+      const nextPath = requestedNext
+        ? getSafeRedirect(requestedNext)
+        : payload.user?.role === 'business' && !payload.user.onboarding_completed
+          ? '/provider/onboarding'
+          : getSafeRedirect(null);
       router.replace(nextPath);
       router.refresh();
     } catch {
@@ -60,6 +69,8 @@ function SignInContent() {
   }
 
   const nextPath = searchParams.get('next');
+  const needsVerification = searchParams.get('verify') === '1';
+  const wasVerified = searchParams.get('verified') === '1';
   const createUserHref = nextPath ? `/signup?role=user&next=${encodeURIComponent(nextPath)}` : '/signup?role=user';
   const createBusinessHref = nextPath
     ? `/signup?role=business&next=${encodeURIComponent(nextPath)}`
@@ -90,6 +101,16 @@ function SignInContent() {
             <CardDescription>Access your account and continue where you left off.</CardDescription>
           </CardHeader>
           <CardContent>
+            {needsVerification ? (
+              <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                Check your email to verify your account before signing in.
+              </p>
+            ) : null}
+            {wasVerified ? (
+              <p className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                Your email is verified. You can sign in now.
+              </p>
+            ) : null}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -104,9 +125,8 @@ function SignInContent() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}

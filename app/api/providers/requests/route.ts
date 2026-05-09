@@ -2,17 +2,18 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { getBusinessAccount } from '@/lib/auth/server';
 
 export async function GET() {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
   const { data, error } = await supabase.rpc('get_requests_for_provider', {
-    p_provider_id: user.id,
+    p_provider_id: account.user.id,
   });
 
   if (error) {

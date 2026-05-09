@@ -27,6 +27,8 @@ const steps = [
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     businessName: '',
     description: '',
@@ -55,11 +57,47 @@ export default function OnboardingPage() {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    setError('');
+
     if (currentStep < steps.length) {
       setCurrentStep((prev) => prev + 1);
-    } else {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const fullAddress = formData.isMobile
+        ? formData.city || formData.zipCode || 'Mobile service'
+        : [formData.address, formData.city, formData.zipCode].filter(Boolean).join(', ');
+
+      const response = await fetch('/api/providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_name: formData.businessName,
+          category: formData.category,
+          address: fullAddress,
+          phone: formData.phone,
+          latitude: 0,
+          longitude: 0,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok && response.status !== 409) {
+        setError(payload.error ?? 'Unable to complete onboarding. Please check your details.');
+        return;
+      }
+
       router.push('/provider/dashboard');
+      router.refresh();
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -356,11 +394,13 @@ export default function OnboardingPage() {
                   <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
-                <Button onClick={handleNext} className="gap-2">
+                <div className="flex flex-col items-end gap-2">
+                  {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                  <Button onClick={handleNext} className="gap-2" disabled={isSaving}>
                   {currentStep === steps.length ? (
                     <>
                       <CheckCircle className="h-4 w-4" />
-                      Complete Setup
+                      {isSaving ? 'Saving...' : 'Complete Setup'}
                     </>
                   ) : (
                     <>
@@ -368,7 +408,8 @@ export default function OnboardingPage() {
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
-                </Button>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
