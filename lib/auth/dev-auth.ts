@@ -21,7 +21,10 @@ export const demoAccounts = [
 ];
 
 export function isDevAuthEnabled() {
-  return process.env.NODE_ENV !== 'production';
+  // NODE_ENV is always 'production' on Vercel (including preview deployments), so we use
+  // a dedicated flag instead. Set NEXT_PUBLIC_ENABLE_DEMO_AUTH=true in Vercel's environment
+  // variables for any environment where demo accounts should be accessible.
+  return process.env.NEXT_PUBLIC_ENABLE_DEMO_AUTH === 'true';
 }
 
 export function getDemoAccount(email: string, password: string) {
