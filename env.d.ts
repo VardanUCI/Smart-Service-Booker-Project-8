@@ -4,6 +4,8 @@ declare namespace NodeJS {
   interface ProcessEnv {
     readonly NEXT_PUBLIC_SUPABASE_URL: string
     readonly NEXT_PUBLIC_SUPABASE_ANON_KEY: string
+    /** Set to "true" to enable demo/dev accounts. Safe to enable on Vercel preview environments. */
+    readonly NEXT_PUBLIC_ENABLE_DEMO_AUTH?: string
   }
 }
 

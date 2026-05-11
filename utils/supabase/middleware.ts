@@ -31,8 +31,14 @@ export async function updateSession(request: NextRequest): Promise<SessionUpdate
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Avoid crashing middleware in local dev when Supabase env vars are not set yet.
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Supabase env vars are missing — all users will appear logged out and auth will not work.
+    // Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment variables.
+    // On Vercel: Project → Settings → Environment Variables → redeploy after saving.
+    console.error(
+      '[middleware] Supabase env vars not set (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY). ' +
+      'Authentication is disabled. See .env.example for setup instructions.'
+    );
     return { response: supabaseResponse, userId: null, role: null, emailVerified: false, onboardingCompleted: false }
   }
 
