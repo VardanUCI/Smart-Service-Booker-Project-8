@@ -1,19 +1,39 @@
+// GET returns the authenticated provider's upcoming availability slots; POST creates a new date/time slot with capacity.
+
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getBusinessAccount } from '@/lib/auth/server';
 
-const postSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be in YYYY-MM-DD format'),
-  capacity: z.number({ invalid_type_error: 'capacity must be a number' }).int('capacity must be an integer').min(1, 'capacity must be at least 1').default(1),
+const slotSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/, 'start_time must be HH:MM'),
+  end_time: z.string().regex(/^\d{2}:\d{2}$/, 'end_time must be HH:MM'),
+  capacity: z.number().int().min(1).max(50).default(1),
 });
 
-async function getProviderOrError(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+export async function GET() {
+  const supabase = await createClient();
+
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
+  }
+
   const { data, error } = await supabase
-    .from('providers')
-    .select('id')
-    .eq('id', userId)
-    .maybeSingle();
-  return { provider: data, lookupError: error };
+    .from('availability_slots')
+    .select('*')
+    .eq('provider_id', account.user.id)
+    .gte('date', new Date().toISOString().split('T')[0])
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true });
+
+  if (error) {
+    console.error('availability_slots fetch error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ slots: data });
 }
 
 export async function POST(request: NextRequest) {
@@ -24,97 +44,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const result = postSchema.safeParse(body);
+  const result = slotSchema.safeParse(body);
   if (!result.success) {
-    const message = result.error.errors[0].message;
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
   }
 
-  const { date, capacity } = result.data;
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
-  const { provider, lookupError } = await getProviderOrError(supabase, user.id);
-  if (lookupError) {
-    console.error('providers lookup error:', lookupError);
-    return NextResponse.json({ error: 'Failed to check provider profile' }, { status: 500 });
-  }
-  if (!provider) {
-    return NextResponse.json({ error: 'Provider profile not found' }, { status: 404 });
-  }
+  const { date, start_time, end_time, capacity } = result.data;
 
-  const today = new Date().toISOString().slice(0, 10);
-  if (date < today) {
-    return NextResponse.json({ error: 'Date must be today or in the future' }, { status: 400 });
-  }
-
-  const { data: existing, error: slotLookupError } = await supabase
-    .from('availability_slots')
-    .select('id')
-    .eq('provider_id', user.id)
-    .eq('date', date)
-    .maybeSingle();
-
-  if (slotLookupError) {
-    console.error('availability_slots lookup error:', slotLookupError);
-    return NextResponse.json({ error: 'Failed to check existing slot' }, { status: 500 });
-  }
-  if (existing) {
-    return NextResponse.json({ error: 'Slot already exists for this date' }, { status: 409 });
+  if (start_time >= end_time) {
+    return NextResponse.json({ error: 'start_time must be before end_time' }, { status: 400 });
   }
 
   const { data: slot, error: insertError } = await supabase
     .from('availability_slots')
-    .insert({
-      provider_id: user.id,
-      date,
-      capacity,
-      booked_count: 0,
-    })
+    .insert({ provider_id: account.user.id, date, start_time, end_time, capacity })
     .select()
     .single();
 
   if (insertError) {
     console.error('availability_slots insert error:', insertError);
-    return NextResponse.json({ error: 'Failed to create availability slot' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create slot' }, { status: 500 });
   }
 
   return NextResponse.json({ slot }, { status: 201 });
-}
-
-export async function GET(request: NextRequest) {
-  const from = request.nextUrl.searchParams.get('from') ?? new Date().toISOString().slice(0, 10);
-  const supabase = await createClient();
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { provider, lookupError } = await getProviderOrError(supabase, user.id);
-  if (lookupError) {
-    console.error('providers lookup error:', lookupError);
-    return NextResponse.json({ error: 'Failed to check provider profile' }, { status: 500 });
-  }
-  if (!provider) {
-    return NextResponse.json({ error: 'Provider profile not found' }, { status: 404 });
-  }
-
-  const { data: slots, error: fetchError } = await supabase
-    .from('availability_slots')
-    .select('*')
-    .eq('provider_id', user.id)
-    .gte('date', from)
-    .order('date', { ascending: true });
-
-  if (fetchError) {
-    console.error('availability_slots fetch error:', fetchError);
-    return NextResponse.json({ error: 'Failed to fetch availability slots' }, { status: 500 });
-  }
-
-  return NextResponse.json({ slots }, { status: 200 });
 }

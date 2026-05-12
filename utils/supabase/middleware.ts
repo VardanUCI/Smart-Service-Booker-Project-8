@@ -1,16 +1,51 @@
 import { createServerClient } from '@supabase/ssr'
+import { getRoleFromUserMetadata, isEmailVerified, normalizeAccountRole } from '@/lib/auth/roles'
+import { getDevAccountFromRequest } from '@/lib/auth/dev-auth'
 import { NextResponse, type NextRequest } from 'next/server'
 
+type SessionUpdateResult = {
+  response: NextResponse
+  userId: string | null
+  role: 'user' | 'business' | null
+  emailVerified: boolean
+  onboardingCompleted: boolean
+}
+
 // This refreshes the user's session cookie on every request so they stay logged in while navigating
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest): Promise<SessionUpdateResult> {
   let supabaseResponse = NextResponse.next({
     request,
   })
+  const devAccount = getDevAccountFromRequest(request)
+
+  if (devAccount) {
+    return {
+      response: supabaseResponse,
+      userId: devAccount.id,
+      role: devAccount.role,
+      emailVerified: devAccount.emailVerified,
+      onboardingCompleted: devAccount.onboardingCompleted,
+    }
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Supabase env vars are missing — all users will appear logged out and auth will not work.
+    // Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your environment variables.
+    // On Vercel: Project → Settings → Environment Variables → redeploy after saving.
+    console.error(
+      '[middleware] Supabase env vars not set (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY). ' +
+      'Authentication is disabled. See .env.example for setup instructions.'
+    );
+    return { response: supabaseResponse, userId: null, role: null, emailVerified: false, onboardingCompleted: false }
+  }
 
   // Creates the supabase server client w/ env variables for url & anon key
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         // get all cookies from incoming request
@@ -31,8 +66,41 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refreshes the session token to keep user authenticated 
-  await supabase.auth.getUser()
+  // Refreshes the session token to keep user authenticated.
+  const { data, error } = await supabase.auth.getUser()
+  if (error) {
+    return { response: supabaseResponse, userId: null, role: null, emailVerified: false, onboardingCompleted: false }
+  }
 
-  return supabaseResponse
+  if (!data.user) {
+    return { response: supabaseResponse, userId: null, role: null, emailVerified: false, onboardingCompleted: false }
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role, onboarding_completed')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  let role = normalizeAccountRole(profile?.role ?? getRoleFromUserMetadata(data.user))
+  let onboardingCompleted = Boolean(profile?.onboarding_completed)
+
+  const { data: provider } = await supabase
+    .from('providers')
+    .select('id')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  if (provider) {
+    role = 'business'
+    onboardingCompleted = Boolean(provider)
+  }
+
+  return {
+    response: supabaseResponse,
+    userId: data.user.id,
+    role,
+    emailVerified: isEmailVerified(data.user),
+    onboardingCompleted,
+  }
 }

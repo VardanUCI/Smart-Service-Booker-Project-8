@@ -1,13 +1,13 @@
+// POST lets a provider accept a seeker's waitlist request, creating a confirmed booking and triggering an automatic customer notification.
+
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getBusinessAccount } from '@/lib/auth/server';
 
-const CONFIRMABLE_STATUSES = ['waiting', 'notified'] as const;
-
-const postSchema = z.object({
-  waitlist_id: z.string().uuid('waitlist_id must be a valid UUID'),
-  slot_id: z.string().uuid('slot_id must be a valid UUID'),
-  notes: z.string().optional(),
+const bookingSchema = z.object({
+  waitlist_id: z.string().uuid('Invalid waitlist ID'),
+  slot_id: z.string().uuid('Invalid slot ID').optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -18,90 +18,47 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const result = postSchema.safeParse(body);
+  const result = bookingSchema.safeParse(body);
   if (!result.success) {
-    const message = result.error.errors[0].message;
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json({ error: result.error.errors[0].message }, { status: 400 });
   }
 
-  const { waitlist_id, slot_id, notes } = result.data;
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
-  const { data: provider, error: providerLookupError } = await supabase
-    .from('providers')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle();
+  const { waitlist_id, slot_id } = result.data;
 
-  if (providerLookupError) {
-    console.error('providers lookup error:', providerLookupError);
-    return NextResponse.json({ error: 'Failed to check provider profile' }, { status: 500 });
-  }
-  if (!provider) {
-    return NextResponse.json({ error: 'Provider profile not found' }, { status: 404 });
-  }
-
-  const { data: waitlist, error: waitlistLookupError } = await supabase
+  // Fetch the waitlist entry to get the customer_id and validate this provider owns it
+  const { data: waitlist, error: waitlistError } = await supabase
     .from('waitlists')
-    .select('id, provider_id, user_id, status')
+    .select('user_id, provider_id, status')
     .eq('id', waitlist_id)
-    .maybeSingle();
+    .single();
 
-  if (waitlistLookupError) {
-    console.error('waitlists lookup error:', waitlistLookupError);
-    return NextResponse.json({ error: 'Failed to fetch waitlist entry' }, { status: 500 });
-  }
-  if (!waitlist) {
+  if (waitlistError || !waitlist) {
     return NextResponse.json({ error: 'Waitlist entry not found' }, { status: 404 });
   }
 
-  if (waitlist.provider_id !== user.id) {
-    return NextResponse.json({ error: 'You can only confirm bookings for your own provider profile' }, { status: 403 });
+  if (waitlist.provider_id !== account.user.id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  if (!CONFIRMABLE_STATUSES.includes(waitlist.status)) {
-    return NextResponse.json(
-      { error: `Cannot book — waitlist is in status ${waitlist.status}` },
-      { status: 409 }
-    );
-  }
-
-  const { data: slot, error: slotLookupError } = await supabase
-    .from('availability_slots')
-    .select('id, provider_id, capacity, booked_count')
-    .eq('id', slot_id)
-    .maybeSingle();
-
-  if (slotLookupError) {
-    console.error('availability_slots lookup error:', slotLookupError);
-    return NextResponse.json({ error: 'Failed to fetch slot' }, { status: 500 });
-  }
-  if (!slot) {
-    return NextResponse.json({ error: 'Slot not found' }, { status: 404 });
-  }
-
-  if (slot.provider_id !== user.id) {
-    return NextResponse.json({ error: 'You can only book into your own slots' }, { status: 403 });
-  }
-
-  if (slot.booked_count >= slot.capacity) {
-    return NextResponse.json({ error: 'Slot is fully booked' }, { status: 409 });
+  if (waitlist.status === 'booked') {
+    return NextResponse.json({ error: 'This request has already been booked' }, { status: 409 });
   }
 
   const { data: booking, error: insertError } = await supabase
     .from('bookings')
     .insert({
       waitlist_id,
-      provider_id: user.id,
+      provider_id: account.user.id,
       customer_id: waitlist.user_id,
-      slot_id,
+      slot_id: slot_id ?? null,
       status: 'confirmed',
-      notes: notes ?? null,
     })
     .select()
     .single();

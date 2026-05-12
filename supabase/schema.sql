@@ -10,6 +10,8 @@ CREATE TABLE public.users (
   name TEXT NOT NULL,
   phone TEXT,
   email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'business')),
+  onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
