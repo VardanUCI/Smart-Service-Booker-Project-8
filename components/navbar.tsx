@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -31,7 +30,6 @@ export function Navbar() {
   }, []);
   const [account, setAccount] = useState<NavbarAccount | null>(null);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-  const unreadNotificationCount = mockNotifications.filter((notification) => !notification.read).length;
   const isSignedIn = Boolean(account);
 
   useEffect(() => {
