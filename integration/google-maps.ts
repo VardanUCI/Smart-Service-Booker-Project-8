@@ -63,7 +63,7 @@
 //
 // =============================================================================
 
-import type { CategoryId } from '@/lib/mock-data';
+import type { CategoryId } from '@/lib/constants';
 
 
 // -----------------------------------------------------------------------------
@@ -575,6 +575,135 @@ interface GooglePlaceResult {
     widthPx?: number;
     heightPx?: number;
   }>;
+}
+
+
+// =============================================================================
+// GEOCODING — geocodeLocation
+// =============================================================================
+//
+// Converts a human-readable location string (ZIP code, city name, or a
+// combination like "Irvine, CA 92614") into GPS coordinates.
+//
+// Uses the Google Geocoding API (same GOOGLE_MAPS_API_KEY — no extra setup).
+// Geocoding API reference:
+//   https://developers.google.com/maps/documentation/geocoding/requests-geocoding
+//
+// PARAMETERS:
+//   location — Any free-form location string:
+//              "92614"                  ← ZIP code only
+//              "Irvine, CA"             ← city + state
+//              "Irvine, CA 92614"       ← city + state + ZIP
+//              "123 Main St, Irvine CA" ← full address
+//
+// RETURNS:
+//   { success: true,  lat, lng }  on success
+//   { success: false, error }     if the string cannot be geocoded
+//
+// USAGE:
+//   // In a Next.js API route or server component:
+//   const result = await geocodeLocation('Irvine, CA 92614');
+//   if (result.success) {
+//     const { lat, lng } = result;   // e.g. 33.6846, -117.8265
+//   }
+// =============================================================================
+
+export interface GeocodeSuccess {
+  success: true;
+  lat: number;
+  lng: number;
+  /** Formatted address returned by Google (useful for display / confirmation). */
+  formattedAddress: string;
+}
+
+export interface GeocodeFailure {
+  success: false;
+  error: string;
+}
+
+export type GeocodeResult = GeocodeSuccess | GeocodeFailure;
+
+/** Internal shape of one result object from the Geocoding API response. */
+interface GoogleGeocodeResult {
+  formatted_address: string;
+  geometry: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
+}
+
+/**
+ * Converts a location string (ZIP code, city, or address) into lat/lng
+ * coordinates using the Google Geocoding API.
+ *
+ * Server-side only — never call this from client components.
+ */
+export async function geocodeLocation(location: string): Promise<GeocodeResult> {
+  if (!apiKey) {
+    const errorMsg =
+      '[Google Maps] API key not configured — missing GOOGLE_MAPS_API_KEY env variable.';
+    console.error(errorMsg);
+    return { success: false, error: errorMsg };
+  }
+
+  const trimmed = location.trim();
+  if (!trimmed) {
+    return { success: false, error: 'Location string is empty.' };
+  }
+
+  const url =
+    `https://maps.googleapis.com/maps/api/geocode/json` +
+    `?address=${encodeURIComponent(trimmed)}` +
+    `&key=${apiKey}`;
+
+  try {
+    console.log(`[Google Maps] Geocoding: "${trimmed}"`);
+
+    const response = await fetch(url, { cache: 'no-store' });
+
+    if (!response.ok) {
+      const body = await response.text();
+      const errorMsg = `[Google Maps] Geocoding API HTTP error ${response.status}: ${body}`;
+      console.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    const data: {
+      status: string;
+      results: GoogleGeocodeResult[];
+      error_message?: string;
+    } = await response.json();
+
+    // Possible statuses: OK, ZERO_RESULTS, OVER_DAILY_LIMIT, INVALID_REQUEST, etc.
+    if (data.status !== 'OK') {
+      const errorMsg =
+        `[Google Maps] Geocoding returned status "${data.status}"` +
+        (data.error_message ? `: ${data.error_message}` : '.');
+      console.warn(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    if (!data.results.length) {
+      return { success: false, error: `No results found for "${trimmed}".` };
+    }
+
+    const { lat, lng } = data.results[0].geometry.location;
+    const formattedAddress = data.results[0].formatted_address;
+
+    console.log(
+      `[Google Maps] Geocoded "${trimmed}" → (${lat}, ${lng}) — ${formattedAddress}`
+    );
+
+    return { success: true, lat, lng, formattedAddress };
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorMsg = `[Google Maps] Unexpected geocoding error: ${message}`;
+    console.error(errorMsg);
+    return { success: false, error: errorMsg };
+  }
 }
 
 

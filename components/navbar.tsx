@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Building2, LogOut, Menu, Bell, Clock, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { mockNotifications } from '@/lib/mock-data';
 
 type NavbarAccount = {
   email: string | null;
@@ -17,9 +16,20 @@ type NavbarAccount = {
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/notifications', { headers: { 'Content-Type': 'application/json' } })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: { notifications: { read: boolean }[] }) => {
+        setUnreadNotificationCount(data.notifications.filter((n) => !n.read).length);
+      })
+      .catch(() => {
+        // Not signed in or fetch failed — badge stays at 0
+      });
+  }, []);
   const [account, setAccount] = useState<NavbarAccount | null>(null);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-  const unreadNotificationCount = mockNotifications.filter((notification) => !notification.read).length;
   const isSignedIn = Boolean(account);
 
   useEffect(() => {

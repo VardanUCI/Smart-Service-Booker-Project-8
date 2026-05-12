@@ -7,21 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Search, MapPin, Clock, Home, Filter } from 'lucide-react';
-import { categories, urgencyLevels, serviceTypes, CategoryId } from '@/lib/mock-data';
-
-const fallbackUrgencyLevels = [
-  { id: 'now', label: 'Right now', description: 'Join the first available opening' },
-  { id: 'today', label: 'Today', description: 'Looking for something later today' },
-  { id: 'this-week', label: 'This week', description: 'Flexible within the next few days' },
-  { id: 'flexible', label: 'Flexible', description: 'Just let me know when something opens' },
-];
-
-const fallbackServiceTypes: Record<string, string[]> = {
-  'pet-care': ['Veterinary visit', 'Grooming', 'Pet boarding', 'Pet sitting'],
-  medical: ['Primary care', 'Urgent care', 'Dental visit', 'Physical therapy'],
-  'home-services': ['Plumbing', 'Electrical', 'Cleaning', 'Handyman'],
-  education: ['Tutoring', 'Coaching', 'Music lesson', 'Test prep'],
-};
+import { categories, urgencyLevels, serviceTypes, CategoryId } from '@/lib/constants';
 
 export default function SearchPage() {
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -32,13 +18,7 @@ export default function SearchPage() {
   const [atMyLocation, setAtMyLocation] = useState(false);
   const [service, setService] = useState('any');
 
-  const effectiveUrgencyLevels = urgencyLevels.length > 0 ? urgencyLevels : fallbackUrgencyLevels;
-  const effectiveServices =
-    selectedCategory && Array.isArray((serviceTypes as Record<string, string[]>)[selectedCategory])
-      ? (serviceTypes as Record<string, string[]>)[selectedCategory]
-      : selectedCategory
-        ? fallbackServiceTypes[selectedCategory] ?? []
-        : [];
+  const effectiveServices = selectedCategory ? (serviceTypes[selectedCategory] ?? []) : [];
 
   const buildNextPath = () => {
     const params = new URLSearchParams();
@@ -179,7 +159,7 @@ export default function SearchPage() {
                     When do you need this?
                   </legend>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {effectiveUrgencyLevels.map((level) => (
+                    {urgencyLevels.map((level) => (
                       <label
                         key={level.id}
                         className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
