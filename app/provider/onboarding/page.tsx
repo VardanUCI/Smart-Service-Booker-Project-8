@@ -85,11 +85,6 @@ export default function OnboardingPage() {
   };
 
   const handleNext = async () => {
-    if (currentStep < steps.length) {
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      await handleSubmit();
-  const handleNext = async () => {
     setError('');
 
     if (currentStep < steps.length) {
@@ -130,44 +125,6 @@ export default function OnboardingPage() {
       setError('Network error. Please try again.');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      if (formData.latitude === null || formData.longitude === null) {
-        // Try geocoding from address
-        const addressStr = [formData.address, formData.city, formData.zipCode].filter(Boolean).join(', ');
-        if (!addressStr) {
-          setSubmitError('Please provide an address or detect your location.');
-          setSubmitting(false);
-          return;
-        }
-        const geo = await apiFetch<{ lat: number; lng: number }>('/api/geocode', {
-          method: 'POST',
-          body: JSON.stringify({ location: addressStr }),
-        });
-        formData.latitude = geo.lat;
-        formData.longitude = geo.lng;
-      }
-      await apiFetch('/api/providers', {
-        method: 'POST',
-        body: JSON.stringify({
-          business_name: formData.businessName,
-          category: formData.category,
-          address: [formData.address, formData.city, formData.zipCode].filter(Boolean).join(', ') || 'Mobile Service',
-          phone: formData.phone,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-        }),
-      });
-      router.push('/provider/dashboard');
-    } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : 'Failed to create provider profile');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -353,12 +310,9 @@ export default function OnboardingPage() {
               )}
 
               <div className="flex justify-between pt-6 border-t">
-                <Button variant="ghost" onClick={() => setCurrentStep((p) => p - 1)} disabled={currentStep === 1 || submitting} className="gap-2">
+                <Button variant="ghost" onClick={() => setCurrentStep((p) => p - 1)} disabled={currentStep === 1 || isSaving} className="gap-2">
                   <ArrowLeft className="h-4 w-4" /> Back
                 </Button>
-                <Button onClick={() => void handleNext()} disabled={submitting} className="gap-2">
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : currentStep === steps.length ? (
-                    <><CheckCircle className="h-4 w-4" /> Complete Setup</>
                 <div className="flex flex-col items-end gap-2">
                   {error ? <p className="text-sm text-destructive">{error}</p> : null}
                   <Button onClick={handleNext} className="gap-2" disabled={isSaving}>
