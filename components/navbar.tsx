@@ -1,12 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Bell, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { mockNotifications } from '@/lib/mock-data';
 
 const navLinks = [
   { href: '/seeker/search', label: 'Find Services' },
@@ -16,7 +15,18 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const unreadNotificationCount = mockNotifications.filter((notification) => !notification.read).length;
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/notifications', { headers: { 'Content-Type': 'application/json' } })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: { notifications: { read: boolean }[] }) => {
+        setUnreadNotificationCount(data.notifications.filter((n) => !n.read).length);
+      })
+      .catch(() => {
+        // Not signed in or fetch failed — badge stays at 0
+      });
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

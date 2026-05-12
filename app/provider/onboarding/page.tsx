@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, Building2, MapPin, Clock, Upload, CheckCircle, Loader2, Navigation } from 'lucide-react';
-import { categories, serviceTypes, CategoryId } from '@/lib/mock-data';
+import { categories, serviceTypes, CategoryId } from '@/lib/constants';
 import { apiFetch } from '@/lib/api';
 
 const steps = [
