@@ -1,6 +1,15 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { ensureUserProfile } from '@/lib/auth/server';
+import { getRoleFromUserMetadata, isEmailVerified } from '@/lib/auth/roles';
+import {
+  DEV_AUTH_COOKIE,
+  DEV_EMAIL_COOKIE,
+  DEV_ONBOARDING_COOKIE,
+  DEV_ROLE_COOKIE,
+  getDemoAccount,
+} from '@/lib/auth/dev-auth';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -22,6 +31,36 @@ export async function POST(request: NextRequest) {
   }
 
   const { email, password } = result.data;
+  const demoAccount = getDemoAccount(email, password);
+
+  if (demoAccount) {
+    const response = NextResponse.json(
+      {
+        user: {
+          id: `dev-${demoAccount.role}`,
+          email: demoAccount.email,
+          name: demoAccount.role === 'business' ? 'Demo Business' : 'Demo User',
+          phone: null,
+          role: demoAccount.role,
+          onboarding_completed: demoAccount.onboardingCompleted,
+        },
+        session: null,
+        demo: true,
+      },
+      { status: 200 }
+    );
+
+    response.cookies.set(DEV_AUTH_COOKIE, '1', { path: '/', sameSite: 'lax' });
+    response.cookies.set(DEV_EMAIL_COOKIE, demoAccount.email, { path: '/', sameSite: 'lax' });
+    response.cookies.set(DEV_ROLE_COOKIE, demoAccount.role, { path: '/', sameSite: 'lax' });
+    response.cookies.set(DEV_ONBOARDING_COOKIE, demoAccount.onboardingCompleted ? '1' : '0', {
+      path: '/',
+      sameSite: 'lax',
+    });
+
+    return response;
+  }
+
   const supabase = await createClient();
 
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -30,6 +69,13 @@ export async function POST(request: NextRequest) {
   });
 
   if (authError) {
+    if (authError.message.toLowerCase().includes('email not confirmed')) {
+      return NextResponse.json(
+        { error: 'Check your email to verify your account before signing in.' },
+        { status: 403 }
+      );
+    }
+
     if (authError.status === 400) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
@@ -37,14 +83,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: authError.message }, { status: 500 });
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('users')
-    .select('id, name, phone, email, created_at')
-    .eq('id', authData.user.id)
-    .single();
+  if (!isEmailVerified(authData.user)) {
+    await supabase.auth.signOut();
+    return NextResponse.json(
+      { error: 'Check your email to verify your account before signing in.' },
+      { status: 403 }
+    );
+  }
+
+  const { data: profile, error: profileError } = await ensureUserProfile(
+    supabase,
+    authData.user,
+    getRoleFromUserMetadata(authData.user)
+  );
 
   if (profileError) {
-    console.error('users fetch error:', profileError);
+    console.error('users upsert/fetch error:', profileError);
     return NextResponse.json({ error: 'Failed to fetch user profile' }, { status: 500 });
   }
 

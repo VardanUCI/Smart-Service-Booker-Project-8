@@ -9,6 +9,8 @@ export type Database = {
           name: string
           phone: string | null
           email: string
+          role: 'user' | 'business'
+          onboarding_completed: boolean
           created_at: string
         }
         Insert: {
@@ -16,12 +18,16 @@ export type Database = {
           name: string
           phone?: string | null
           email: string
+          role?: 'user' | 'business'
+          onboarding_completed?: boolean
           created_at?: string
         }
         Update: {
           name?: string
           phone?: string | null
           email?: string
+          role?: 'user' | 'business'
+          onboarding_completed?: boolean
         }
       }
       providers: {

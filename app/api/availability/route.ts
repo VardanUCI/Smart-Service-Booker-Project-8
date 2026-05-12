@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getBusinessAccount } from '@/lib/auth/server';
 
 const slotSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
@@ -14,15 +15,15 @@ const slotSchema = z.object({
 export async function GET() {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
   const { data, error } = await supabase
     .from('availability_slots')
     .select('*')
-    .eq('provider_id', user.id)
+    .eq('provider_id', account.user.id)
     .gte('date', new Date().toISOString().split('T')[0])
     .order('date', { ascending: true })
     .order('start_time', { ascending: true });
@@ -50,9 +51,9 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
   const { date, start_time, end_time, capacity } = result.data;
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   const { data: slot, error: insertError } = await supabase
     .from('availability_slots')
-    .insert({ provider_id: user.id, date, start_time, end_time, capacity })
+    .insert({ provider_id: account.user.id, date, start_time, end_time, capacity })
     .select()
     .single();
 

@@ -5,7 +5,6 @@ const quickLinks = [
   { href: '/seeker/search', label: 'Find Services' },
   { href: '/seeker/waitlists', label: 'My Waitlists' },
   { href: '/provider/onboarding', label: 'List Your Business' },
-  { href: '/provider/dashboard', label: 'Provider Dashboard' },
   { href: '/notifications', label: 'Notifications' },
 ];
 

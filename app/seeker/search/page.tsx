@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,8 @@ import { Search, MapPin, Clock, Home, Filter } from 'lucide-react';
 import { categories, urgencyLevels, serviceTypes, CategoryId } from '@/lib/constants';
 
 export default function SearchPage() {
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [isAuthLoaded, setIsAuthLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | ''>('');
   const [location, setLocation] = useState('');
   const [urgency, setUrgency] = useState('today');
@@ -31,8 +33,28 @@ export default function SearchPage() {
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextPath = buildNextPath();
-    window.location.href = `/signin?next=${encodeURIComponent(nextPath)}`;
+    window.location.href = isSignedIn ? nextPath : `/signin?next=${encodeURIComponent(nextPath)}`;
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((payload: { user?: unknown }) => {
+        if (isMounted) setIsSignedIn(Boolean(payload.user));
+      })
+      .catch(() => {
+        if (isMounted) setIsSignedIn(false);
+      })
+      .finally(() => {
+        if (isMounted) setIsAuthLoaded(true);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
@@ -171,10 +193,11 @@ export default function SearchPage() {
 
                 <button
                   type="submit"
+                  disabled={!isAuthLoaded}
                   className="inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <Search className="mr-2 h-4 w-4" />
-                  Search Providers
+                  {isAuthLoaded ? 'Search Providers' : 'Checking account...'}
                 </button>
               </form>
             </CardContent>

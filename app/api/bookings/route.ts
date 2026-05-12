@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getBusinessAccount } from '@/lib/auth/server';
 
 const bookingSchema = z.object({
   waitlist_id: z.string().uuid('Invalid waitlist ID'),
@@ -24,9 +25,9 @@ export async function POST(request: NextRequest) {
 
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
   }
 
   const { waitlist_id, slot_id } = result.data;
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Waitlist entry not found' }, { status: 404 });
   }
 
-  if (waitlist.provider_id !== user.id) {
+  if (waitlist.provider_id !== account.user.id) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     .from('bookings')
     .insert({
       waitlist_id,
-      provider_id: user.id,
+      provider_id: account.user.id,
       customer_id: waitlist.user_id,
       slot_id: slot_id ?? null,
       status: 'confirmed',

@@ -32,6 +32,8 @@ export default function OnboardingPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoStatus, setGeoStatus] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     businessName: '',
     description: '',
@@ -87,6 +89,47 @@ export default function OnboardingPage() {
       setCurrentStep((prev) => prev + 1);
     } else {
       await handleSubmit();
+  const handleNext = async () => {
+    setError('');
+
+    if (currentStep < steps.length) {
+      setCurrentStep((prev) => prev + 1);
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const fullAddress = formData.isMobile
+        ? formData.city || formData.zipCode || 'Mobile service'
+        : [formData.address, formData.city, formData.zipCode].filter(Boolean).join(', ');
+
+      const response = await fetch('/api/providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_name: formData.businessName,
+          category: formData.category,
+          address: fullAddress,
+          phone: formData.phone,
+          latitude: 0,
+          longitude: 0,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok && response.status !== 409) {
+        setError(payload.error ?? 'Unable to complete onboarding. Please check your details.');
+        return;
+      }
+
+      router.push('/provider/dashboard');
+      router.refresh();
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -316,10 +359,19 @@ export default function OnboardingPage() {
                 <Button onClick={() => void handleNext()} disabled={submitting} className="gap-2">
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : currentStep === steps.length ? (
                     <><CheckCircle className="h-4 w-4" /> Complete Setup</>
+                <div className="flex flex-col items-end gap-2">
+                  {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                  <Button onClick={handleNext} className="gap-2" disabled={isSaving}>
+                  {currentStep === steps.length ? (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      {isSaving ? 'Saving...' : 'Complete Setup'}
+                    </>
                   ) : (
                     <>Continue <ArrowRight className="h-4 w-4" /></>
                   )}
-                </Button>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
