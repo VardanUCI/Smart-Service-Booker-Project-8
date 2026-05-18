@@ -12,8 +12,13 @@ const signupSchema = z
     name: z.string().min(1, 'Name is required'),
     businessLocation: z.string().optional(),
     phone: z.string().optional(),
-    role: z.enum(['user', 'business']).default('user'),
+    role: z.enum(['user', 'business']).optional(),
+    accountType: z.enum(['user', 'business']).optional(),
   })
+  .transform((value) => ({
+    ...value,
+    role: normalizeAccountRole(value.role ?? value.accountType),
+  }))
   .refine((value) => value.role !== 'business' || Boolean(value.businessLocation?.trim()), {
     message: 'Business location is required',
     path: ['businessLocation'],
@@ -33,8 +38,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const { email, password, name, phone, businessLocation } = result.data;
-  const role = normalizeAccountRole(result.data.role);
+  const { email, password, name, phone, businessLocation, role } = result.data;
   const supabase = await createClient();
 
   const { data: authData, error: authError } = await supabase.auth.signUp({

@@ -82,7 +82,9 @@ export async function updateSession(request: NextRequest): Promise<SessionUpdate
     .eq('id', data.user.id)
     .maybeSingle()
 
-  let role = normalizeAccountRole(profile?.role ?? getRoleFromUserMetadata(data.user))
+  const metadataRole = getRoleFromUserMetadata(data.user)
+  let role: 'user' | 'business' =
+    normalizeAccountRole(profile?.role) === 'business' || metadataRole === 'business' ? 'business' : 'user'
   let onboardingCompleted = Boolean(profile?.onboarding_completed)
 
   const { data: provider } = await supabase

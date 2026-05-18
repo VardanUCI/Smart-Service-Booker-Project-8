@@ -15,6 +15,7 @@ type UserProfile = {
   email: string;
   name: string | null;
   phone: string | null;
+  avatar_url: string | null;
   role: AccountRole;
   onboarding_completed: boolean;
 };
@@ -38,7 +39,10 @@ export async function ensureUserProfile(
     .eq('id', user.id)
     .maybeSingle();
 
-  const role = normalizeAccountRole(existingProfile?.role ?? preferredRole ?? getRoleFromUserMetadata(user));
+  const metadataRole = getRoleFromUserMetadata(user);
+  const existingRole = normalizeAccountRole(existingProfile?.role);
+  const requestedRole = normalizeAccountRole(preferredRole ?? metadataRole);
+  const role: AccountRole = existingRole === 'business' || requestedRole === 'business' ? 'business' : 'user';
   const name =
     typeof user.user_metadata?.name === 'string' && user.user_metadata.name.trim()
       ? user.user_metadata.name
@@ -60,7 +64,7 @@ export async function ensureUserProfile(
       },
       { onConflict: 'id' }
     )
-    .select('id, email, name, phone, role, onboarding_completed')
+    .select('id, email, name, phone, avatar_url, role, onboarding_completed')
     .single();
 }
 
@@ -79,7 +83,7 @@ export async function getCurrentAccount(
 
   const { data: profile, error: profileError } = await supabase
     .from('users')
-    .select('id, email, name, phone, role, onboarding_completed')
+    .select('id, email, name, phone, avatar_url, role, onboarding_completed')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -87,7 +91,8 @@ export async function getCurrentAccount(
     console.error('users role fetch error:', profileError);
   }
 
-  let role = normalizeAccountRole(profile?.role ?? metadataRole);
+  let role: AccountRole =
+    normalizeAccountRole(profile?.role) === 'business' || metadataRole === 'business' ? 'business' : 'user';
   let onboardingCompleted = Boolean(profile?.onboarding_completed);
   const { data: provider } = await supabase
     .from('providers')

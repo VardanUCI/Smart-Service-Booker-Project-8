@@ -8,6 +8,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          avatar_url: string | null
           email: string
           role: 'user' | 'business'
           onboarding_completed: boolean
@@ -17,6 +18,7 @@ export type Database = {
           id: string
           name: string
           phone?: string | null
+          avatar_url?: string | null
           email: string
           role?: 'user' | 'business'
           onboarding_completed?: boolean
@@ -25,10 +27,12 @@ export type Database = {
         Update: {
           name?: string
           phone?: string | null
+          avatar_url?: string | null
           email?: string
           role?: 'user' | 'business'
           onboarding_completed?: boolean
         }
+        Relationships: []
       }
       providers: {
         Row: {
@@ -68,6 +72,7 @@ export type Database = {
           is_available?: boolean
           available_until?: string | null
         }
+        Relationships: []
       }
       waitlists: {
         Row: {
@@ -104,6 +109,7 @@ export type Database = {
           contact_method?: 'sms' | 'email' | null
           contact_value?: string | null
         }
+        Relationships: []
       }
       availability_slots: {
         Row: {
@@ -133,6 +139,7 @@ export type Database = {
           capacity?: number
           booked_count?: number
         }
+        Relationships: []
       }
       bookings: {
         Row: {
@@ -160,6 +167,7 @@ export type Database = {
           slot_id?: string | null
           notes?: string | null
         }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -185,6 +193,7 @@ export type Database = {
         Update: {
           read?: boolean
         }
+        Relationships: []
       }
     }
     Functions: {
@@ -247,6 +256,9 @@ export type Database = {
         }[]
       }
     }
+    Views: {}
+    Enums: {}
+    CompositeTypes: {}
   }
 }
 

@@ -151,3 +151,8 @@
   box-shadow: 0 0 0 1px var(--color-primary);
   background-color: color-mix(in oklab, var(--color-primary) 10%, transparent);
 }
+
+input[data-password-input]::-ms-reveal,
+input[data-password-input]::-ms-clear {
+  display: none;
+}

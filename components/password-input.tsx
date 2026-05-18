@@ -17,6 +17,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           {...props}
           ref={ref}
           type={isVisible ? 'text' : 'password'}
+          data-password-input
           className={cn('pr-11', className)}
         />
         <button

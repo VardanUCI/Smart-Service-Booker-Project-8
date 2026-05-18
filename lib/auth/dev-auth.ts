@@ -5,6 +5,14 @@ export const DEV_EMAIL_COOKIE = 'ssb-dev-email';
 export const DEV_ROLE_COOKIE = 'ssb-dev-role';
 export const DEV_ONBOARDING_COOKIE = 'ssb-dev-onboarding';
 
+type DevAccount = {
+  id: string;
+  email: string;
+  role: 'user' | 'business';
+  emailVerified: boolean;
+  onboardingCompleted: boolean;
+};
+
 export const demoAccounts = [
   {
     email: 'user@demo.local',
@@ -38,7 +46,7 @@ export function getDemoAccount(email: string, password: string) {
   );
 }
 
-export function getDevAccountFromRequest(request: NextRequest) {
+export function getDevAccountFromRequest(request: NextRequest): DevAccount | null {
   if (!isDevAuthEnabled() || request.cookies.get(DEV_AUTH_COOKIE)?.value !== '1') {
     return null;
   }

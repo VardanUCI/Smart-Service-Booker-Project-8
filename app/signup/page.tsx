@@ -42,6 +42,9 @@ function SignUpContent() {
     event.preventDefault();
     setError('');
     setSuccessMessage('');
+    const formData = new FormData(event.currentTarget);
+    const selectedAccountType: AccountType = formData.get('accountType') === 'business' ? 'business' : 'user';
+    setAccountType(selectedAccountType);
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
@@ -61,10 +64,12 @@ function SignUpContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          businessLocation: accountType === 'business' && businessLocation.trim() ? businessLocation : undefined,
+          businessLocation:
+            selectedAccountType === 'business' && businessLocation.trim() ? businessLocation : undefined,
           email,
           phone: phone.trim() ? phone : undefined,
-          role: accountType,
+          role: selectedAccountType,
+          accountType: selectedAccountType,
           password,
         }),
       });
@@ -87,7 +92,7 @@ function SignUpContent() {
         return;
       }
 
-      if (accountType === 'business') {
+      if (selectedAccountType === 'business') {
         router.replace('/provider/onboarding');
       } else {
         router.replace(getSafeRedirect(nextPath));

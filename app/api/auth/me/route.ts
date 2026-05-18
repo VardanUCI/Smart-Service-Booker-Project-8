@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
       user: {
         id: devAccount.id,
         email: devAccount.email,
+        name: devAccount.role === 'business' ? 'Demo Business' : 'Demo User',
+        avatarUrl: null,
         role: devAccount.role,
         emailVerified: devAccount.emailVerified,
         onboardingCompleted: devAccount.onboardingCompleted,
@@ -29,6 +31,8 @@ export async function GET(request: NextRequest) {
     user: {
       id: account.user.id,
       email: account.user.email,
+      name: account.profile?.name ?? account.user.user_metadata?.name ?? null,
+      avatarUrl: account.profile?.avatar_url ?? account.user.user_metadata?.avatar_url ?? null,
       role: account.role,
       emailVerified: account.emailVerified,
       onboardingCompleted: account.onboardingCompleted,
