@@ -15,7 +15,7 @@ type UserProfile = {
   email: string;
   name: string | null;
   phone: string | null;
-  avatar_url: string | null;
+  avatar_url?: string | null;
   role: AccountRole;
   onboarding_completed: boolean;
 };
@@ -64,7 +64,7 @@ export async function ensureUserProfile(
       },
       { onConflict: 'id' }
     )
-    .select('id, email, name, phone, avatar_url, role, onboarding_completed')
+    .select('id, email, name, phone, role, onboarding_completed')
     .single();
 }
 
@@ -83,7 +83,7 @@ export async function getCurrentAccount(
 
   const { data: profile, error: profileError } = await supabase
     .from('users')
-    .select('id, email, name, phone, avatar_url, role, onboarding_completed')
+    .select('id, email, name, phone, role, onboarding_completed')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -110,6 +110,7 @@ export async function getCurrentAccount(
     profile: profile
       ? {
           ...profile,
+          avatar_url: null,
           role,
           onboarding_completed: onboardingCompleted,
         }

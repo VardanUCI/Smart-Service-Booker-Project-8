@@ -34,6 +34,7 @@ export default function AccountPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -45,15 +46,34 @@ export default function AccountPage() {
   useEffect(() => {
     let isMounted = true;
 
-    apiFetch<{ user: AccountProfile }>('/api/account')
-      .then(({ user }) => {
+    fetch('/api/account', { cache: 'no-store' })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => ({}))) as {
+          user?: AccountProfile;
+          error?: string;
+        };
+
+        if (response.status === 401) {
+          router.replace('/signin?next=/account');
+          return;
+        }
+
+        if (!response.ok || !payload.user) {
+          throw new Error(payload.error ?? 'Failed to load account profile');
+        }
+
+        return payload.user;
+      })
+      .then((user) => {
+        if (!user) return;
         if (!isMounted) return;
         setAccount(user);
         setDisplayName(user.name);
         setBusinessLocation('');
       })
-      .catch(() => {
-        router.replace('/signin?next=/account');
+      .catch((error) => {
+        if (!isMounted) return;
+        setLoadError(error instanceof Error ? error.message : 'Failed to load account profile');
       })
       .finally(() => {
         if (isMounted) setIsLoading(false);
@@ -191,6 +211,16 @@ export default function AccountPage() {
             <div className="flex items-center justify-center py-24">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
+          ) : loadError ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Unavailable</CardTitle>
+                <CardDescription>We could not load your account details right now.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-destructive">{loadError}</p>
+              </CardContent>
+            </Card>
           ) : account ? (
             <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
               <div className="space-y-6">

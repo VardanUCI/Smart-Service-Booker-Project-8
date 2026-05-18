@@ -103,7 +103,7 @@ export async function PATCH(request: NextRequest) {
     .from('users')
     .update(updatePayload)
     .eq('id', account.user.id)
-    .select('id, email, name, phone, avatar_url, role, onboarding_completed')
+    .select('id, email, name, phone, role, onboarding_completed')
     .single();
 
   if (profileError) {
@@ -128,7 +128,11 @@ export async function PATCH(request: NextRequest) {
       id: account.user.id,
       email: account.user.email ?? profile.email,
       name: profile.name,
-      avatarUrl: profile.avatar_url,
+      avatarUrl:
+        avatarUrl ??
+        (typeof account.user.user_metadata?.avatar_url === 'string'
+          ? account.user.user_metadata.avatar_url
+          : null),
       role: profile.role,
       onboardingCompleted: profile.onboarding_completed,
     },
