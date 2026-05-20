@@ -18,3 +18,4 @@ yarn.lock
 
 .nvmrc
 tsconfig.tsbuildinfo
+.rocketride/
