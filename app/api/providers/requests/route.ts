@@ -18,7 +18,7 @@ export async function GET() {
 
   if (error) {
     console.error('get_requests_for_provider error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ requests: data });

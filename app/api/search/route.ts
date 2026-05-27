@@ -16,18 +16,29 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const latNum = parseFloat(lat);
+  const lonNum = parseFloat(lon);
+  const radiusNum = parseFloat(radius);
+
+  if (isNaN(latNum) || isNaN(lonNum)) {
+    return NextResponse.json(
+      { error: 'lat and lon must be valid numbers' },
+      { status: 400 }
+    );
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc('get_available_providers_nearby', {
-    user_lat: parseFloat(lat),
-    user_lon: parseFloat(lon),
-    search_radius_meters: parseFloat(radius),
+    user_lat: latNum,
+    user_lon: lonNum,
+    search_radius_meters: isNaN(radiusNum) ? 5000 : radiusNum,
     search_category: category,
   });
 
   if (error) {
     console.error('Supabase RPC error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   // TODO: once Google Maps API is integrated, merge results here:
