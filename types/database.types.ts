@@ -84,6 +84,7 @@ export type Database = {
           urgency: 'now' | 'today' | 'this-week' | 'flexible' | null
           contact_method: 'sms' | 'email' | null
           contact_value: string | null
+          notified_at: string | null
           created_at: string
         }
         Insert: {
@@ -98,6 +99,7 @@ export type Database = {
           urgency?: 'now' | 'today' | 'this-week' | 'flexible' | null
           contact_method?: 'sms' | 'email' | null
           contact_value?: string | null
+          notified_at?: string | null
           created_at?: string
         }
         Update: {
@@ -105,6 +107,7 @@ export type Database = {
           expires_at?: string
           contact_method?: 'sms' | 'email' | null
           contact_value?: string | null
+          notified_at?: string | null
         }
         Relationships: []
       }
