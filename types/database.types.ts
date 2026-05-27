@@ -144,7 +144,7 @@ export type Database = {
       bookings: {
         Row: {
           id: string
-          waitlist_id: string
+          waitlist_id: string | null
           provider_id: string
           customer_id: string
           slot_id: string | null
@@ -154,7 +154,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          waitlist_id: string
+          waitlist_id?: string | null
           provider_id: string
           customer_id: string
           slot_id?: string | null
@@ -196,6 +196,7 @@ export type Database = {
         Relationships: []
       }
     }
+    Views: Record<string, never>
     Functions: {
       get_available_providers_nearby: {
         Args: {

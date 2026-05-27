@@ -41,7 +41,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'You do not own this waitlist entry' }, { status: 403 });
   }
 
-  if (!CANCELLABLE_STATUSES.includes(entry.status)) {
+  if (!CANCELLABLE_STATUSES.includes(entry.status as typeof CANCELLABLE_STATUSES[number])) {
     return NextResponse.json(
       { error: `Cannot cancel — entry is already in status ${entry.status}` },
       { status: 409 }
