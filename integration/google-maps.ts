@@ -24,43 +24,6 @@
 //     'beauty-wellness'  →  beauty_salon, hair_care, spa
 //     'professional'     →  lawyer, accounting, insurance_agency
 //
-// -----------------------------------------------------------------------------
-// SETUP INSTRUCTIONS (do these once before using this module):
-// -----------------------------------------------------------------------------
-//
-//   1. CREATE A GOOGLE CLOUD PROJECT
-//      Go to https://console.cloud.google.com/ and create a new project
-//      (or use an existing one).
-//
-//   2. ENABLE THE PLACES API (NEW)
-//      In the Cloud Console, go to APIs & Services → Library.
-//      Search for "Places API (New)" and click Enable.
-//      Note: This is the NEW version of the Places API — it uses a simpler
-//      REST interface and does NOT require the older `@googlemaps/google-maps-services-js` SDK.
-//
-//   3. CREATE AN API KEY
-//      Go to APIs & Services → Credentials → Create Credentials → API key.
-//      Restrict it to the Places API (New) for security.
-//      For production, also add HTTP referrer or IP restrictions.
-//
-//   4. ADD ENVIRONMENT VARIABLE
-//      Add this line to your `.env.local` file in the project root:
-//
-//        GOOGLE_MAPS_API_KEY=AIzaSy...your-key-here...
-//
-//      Next.js loads `.env.local` automatically on the server side.
-//      This key is NEVER exposed to the browser — it stays server-only.
-//
-//   5. NO EXTRA PACKAGES NEEDED
-//      This module uses the built-in `fetch` API to call Google's REST
-//      endpoints directly. No npm install required.
-//
-//   6. BILLING
-//      The Places API (New) requires a billing account on Google Cloud.
-//      New accounts get $300 in free credits. The Nearby Search endpoint
-//      costs $32 per 1,000 requests (as of 2024). For development and
-//      testing, the free tier is more than enough.
-//
 // =============================================================================
 
 import type { CategoryId } from '@/lib/constants';
@@ -99,8 +62,7 @@ if (!apiKey) {
   console.warn(
     '[Google Maps] Missing GOOGLE_MAPS_API_KEY environment variable.\n' +
     'Nearby business search is disabled.\n' +
-    'To enable it, add GOOGLE_MAPS_API_KEY to your .env.local file.\n' +
-    'See integration/google-maps.ts for full setup instructions.'
+    'To enable it, configure the GOOGLE_MAPS_API_KEY environment variable.'
   );
 }
 
