@@ -8,21 +8,31 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          avatar_url: string | null
           email: string
+          role: 'user' | 'business'
+          onboarding_completed: boolean
           created_at: string
         }
         Insert: {
           id: string
           name: string
           phone?: string | null
+          avatar_url?: string | null
           email: string
+          role?: 'user' | 'business'
+          onboarding_completed?: boolean
           created_at?: string
         }
         Update: {
           name?: string
           phone?: string | null
+          avatar_url?: string | null
           email?: string
+          role?: 'user' | 'business'
+          onboarding_completed?: boolean
         }
+        Relationships: []
       }
       providers: {
         Row: {
@@ -62,6 +72,7 @@ export type Database = {
           is_available?: boolean
           available_until?: string | null
         }
+        Relationships: []
       }
       waitlists: {
         Row: {
@@ -98,6 +109,7 @@ export type Database = {
           contact_method?: 'sms' | 'email' | null
           contact_value?: string | null
         }
+        Relationships: []
       }
       availability_slots: {
         Row: {
@@ -127,11 +139,12 @@ export type Database = {
           capacity?: number
           booked_count?: number
         }
+        Relationships: []
       }
       bookings: {
         Row: {
           id: string
-          waitlist_id: string
+          waitlist_id: string | null
           provider_id: string
           customer_id: string
           slot_id: string | null
@@ -141,7 +154,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          waitlist_id: string
+          waitlist_id?: string | null
           provider_id: string
           customer_id: string
           slot_id?: string | null
@@ -154,6 +167,7 @@ export type Database = {
           slot_id?: string | null
           notes?: string | null
         }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -179,8 +193,10 @@ export type Database = {
         Update: {
           read?: boolean
         }
+        Relationships: []
       }
     }
+    Views: Record<string, never>
     Functions: {
       get_available_providers_nearby: {
         Args: {
@@ -241,6 +257,9 @@ export type Database = {
         }[]
       }
     }
+    Views: {}
+    Enums: {}
+    CompositeTypes: {}
   }
 }
 
