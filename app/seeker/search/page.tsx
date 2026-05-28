@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, MapPin, Clock, Home, Filter } from 'lucide-react';
+import { Search, MapPin, Clock, Home, Filter, LocateFixed, Loader2 } from 'lucide-react';
 import { categories, urgencyLevels, serviceTypes, CategoryId } from '@/lib/constants';
 
 export default function SearchPage() {
@@ -14,16 +14,66 @@ export default function SearchPage() {
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | ''>('');
   const [location, setLocation] = useState('');
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState('');
+  const locatingRef = useRef(false);
   const [urgency, setUrgency] = useState('today');
   const [atMyLocation, setAtMyLocation] = useState(false);
   const [service, setService] = useState('any');
 
   const effectiveServices = selectedCategory ? (serviceTypes[selectedCategory] ?? []) : [];
 
+  const handleUseMyLocation = () => {
+    if (locatingRef.current) return;
+    if (!navigator.geolocation) {
+      setLocateError('Geolocation is not supported by your browser.');
+      return;
+    }
+    locatingRef.current = true;
+    setLocating(true);
+    setLocateError('');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch('/api/geocode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: latitude, lng: longitude }),
+          });
+          const data = await res.json() as { zipOrCity?: string; error?: string };
+          if (data.zipOrCity) {
+            setLocation(data.zipOrCity);
+            setGpsCoords({ lat: latitude, lng: longitude });
+          } else {
+            setLocateError('Could not determine your location. Enter it manually.');
+          }
+        } catch {
+          setLocateError('Could not determine your location. Enter it manually.');
+        } finally {
+          locatingRef.current = false;
+          setLocating(false);
+        }
+      },
+      () => {
+        locatingRef.current = false;
+        setLocateError('Location access denied. Enter your ZIP or city manually.');
+        setLocating(false);
+      }
+    );
+  };
+
   const buildNextPath = () => {
     const params = new URLSearchParams();
     if (selectedCategory) params.set('category', selectedCategory);
-    if (location) params.set('location', location);
+    if (gpsCoords) {
+      params.set('lat', String(gpsCoords.lat));
+      params.set('lng', String(gpsCoords.lng));
+      if (location) params.set('location', location);
+    } else if (location) {
+      params.set('location', location);
+    }
     if (service && service !== 'any') params.set('service', service);
     if (urgency) params.set('urgency', urgency);
     if (atMyLocation) params.set('mobile', 'true');
@@ -124,17 +174,33 @@ export default function SearchPage() {
                 ) : null}
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Your Location</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="location">Your Location</Label>
+                    <button
+                      type="button"
+                      onClick={handleUseMyLocation}
+                      disabled={locating}
+                      className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
+                    >
+                      {locating
+                        ? <><Loader2 className="h-3 w-3 animate-spin" /> Locating...</>
+                        : <><LocateFixed className="h-3 w-3" /> Use my location</>
+                      }
+                    </button>
+                  </div>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="location"
                       placeholder="Enter ZIP code or city"
                       value={location}
-                      onChange={(e) => setLocation(e.target.value)}
+                      onChange={(e) => { setLocation(e.target.value); setGpsCoords(null); if (locateError) setLocateError(''); }}
                       className="pl-10"
                     />
                   </div>
+                  {locateError && (
+                    <p className="text-xs text-destructive">{locateError}</p>
+                  )}
                 </div>
 
                 <label className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg cursor-pointer">
