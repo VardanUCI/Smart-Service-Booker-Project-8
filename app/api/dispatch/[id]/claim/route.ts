@@ -40,21 +40,22 @@ export async function POST(
     return NextResponse.json({ error: 'Dispatch request not found' }, { status: 404 });
   }
 
-  if (dispatch.status !== 'open') {
+  if (dispatch.status === 'claimed') {
     return NextResponse.json({ error: 'Dispatch request is no longer open' }, { status: 409 });
   }
 
-  if (new Date(dispatch.expires_at) <= new Date()) {
+  if (dispatch.status === 'expired' || new Date(dispatch.expires_at) <= new Date()) {
     return NextResponse.json({ error: 'Dispatch request has expired' }, { status: 410 });
   }
 
-  const claimed_at = new Date().toISOString();
+  const now = new Date().toISOString();
 
   const { data: updated, error: updateError } = await supabase
     .from('dispatch_requests')
-    .update({ status: 'claimed', claimed_by: account.user.id, claimed_at })
+    .update({ status: 'claimed', claimed_by: account.user.id, claimed_at: now })
     .eq('id', id)
     .eq('status', 'open')
+    .gt('expires_at', now)
     .select();
 
   if (updateError) {
@@ -63,6 +64,15 @@ export async function POST(
   }
 
   if (!updated || updated.length === 0) {
+    // Distinguish expired vs claimed so the caller gets the right status code
+    const { data: current } = await supabase
+      .from('dispatch_requests')
+      .select('status, expires_at')
+      .eq('id', id)
+      .single();
+    if (!current || new Date(current.expires_at) <= new Date()) {
+      return NextResponse.json({ error: 'Dispatch request has expired' }, { status: 410 });
+    }
     return NextResponse.json({ error: 'Request was just claimed by another provider' }, { status: 409 });
   }
 
