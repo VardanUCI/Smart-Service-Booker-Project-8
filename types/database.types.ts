@@ -195,6 +195,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_requests: {
+        Row: {
+          id: string
+          customer_id: string
+          category: string
+          description: string | null
+          address: string
+          location: unknown
+          radius_meters: number
+          expires_at: string
+          status: 'open' | 'claimed' | 'expired'
+          claimed_by: string | null
+          claimed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id: string
+          category: string
+          description?: string | null
+          address: string
+          location: string
+          radius_meters?: number
+          expires_at: string
+          status?: 'open' | 'claimed' | 'expired'
+          claimed_by?: string | null
+          claimed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          status?: 'open' | 'claimed' | 'expired'
+          claimed_by?: string | null
+          claimed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -254,6 +290,20 @@ export type Database = {
           status: string
           requested_at: string
           expires_at: string
+        }[]
+      }
+      get_open_dispatch_requests_for_provider: {
+        Args: { p_provider_id: string }
+        Returns: {
+          id: string
+          customer_id: string
+          category: string
+          description: string | null
+          address: string
+          radius_meters: number
+          expires_at: string
+          created_at: string
+          dist_meters: number
         }[]
       }
     }
