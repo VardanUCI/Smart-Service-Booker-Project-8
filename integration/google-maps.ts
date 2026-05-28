@@ -669,6 +669,90 @@ export async function geocodeLocation(location: string): Promise<GeocodeResult> 
 }
 
 
+export interface ReverseGeocodeSuccess {
+  success: true;
+  zipOrCity: string;
+  formattedAddress: string;
+}
+
+export interface ReverseGeocodeFailure {
+  success: false;
+  error: string;
+}
+
+export type ReverseGeocodeResult = ReverseGeocodeSuccess | ReverseGeocodeFailure;
+
+/**
+ * Converts lat/lng coordinates to a ZIP code or city name using the Google Geocoding API.
+ * Prefers postal_code; falls back to locality (city) + short state abbreviation.
+ * Server-side only.
+ */
+export async function reverseGeocodeLocation(lat: number, lng: number): Promise<ReverseGeocodeResult> {
+  if (!apiKey) {
+    return { success: false, error: '[Google Maps] API key not configured.' };
+  }
+
+  const url =
+    `https://maps.googleapis.com/maps/api/geocode/json` +
+    `?latlng=${lat},${lng}` +
+    `&key=${apiKey}`;
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      return { success: false, error: `[Google Maps] Reverse geocode HTTP error ${response.status}` };
+    }
+
+    const data: {
+      status: string;
+      results: Array<{
+        formatted_address: string;
+        types: string[];
+        address_components: Array<{ long_name: string; short_name: string; types: string[] }>;
+      }>;
+    } = await response.json();
+
+    if (data.status !== 'OK' || !data.results.length) {
+      return { success: false, error: `[Google Maps] Reverse geocode status: ${data.status}` };
+    }
+
+    // Google returns results ordered most-specific → least-specific. A result
+    // specifically typed as postal_code may appear at a later index even when
+    // results[0] (a street address) also contains it in its components. Scan
+    // all results for a postal_code-typed entry first for the most reliable ZIP.
+    const postalResult = data.results.find((r) => r.types?.includes('postal_code'));
+    if (postalResult) {
+      const postalComponent = postalResult.address_components.find((c) => c.types.includes('postal_code'));
+      if (postalComponent) {
+        return { success: true, zipOrCity: postalComponent.long_name, formattedAddress: postalResult.formatted_address };
+      }
+    }
+
+    // Fall back: check address_components of the most-specific result.
+    const components = data.results[0].address_components;
+    const postal = components.find((c) => c.types.includes('postal_code'));
+    if (postal) {
+      return { success: true, zipOrCity: postal.long_name, formattedAddress: data.results[0].formatted_address };
+    }
+
+    const city = components.find((c) => c.types.includes('locality'));
+    const state = components.find((c) => c.types.includes('administrative_area_level_1'));
+    if (city) {
+      return {
+        success: true,
+        zipOrCity: `${city.long_name}${state ? `, ${state.short_name}` : ''}`,
+        formattedAddress: data.results[0].formatted_address,
+      };
+    }
+
+    return { success: false, error: '[Google Maps] Could not extract ZIP or city from coordinates.' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: `[Google Maps] Reverse geocode error: ${message}` };
+  }
+}
+
+
 // =============================================================================
 // USAGE EXAMPLES
 // =============================================================================

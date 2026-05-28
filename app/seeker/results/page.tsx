@@ -21,6 +21,8 @@ function ResultsContent() {
   const category = searchParams.get('category') ?? '';
   const location = searchParams.get('location') ?? '';
   const urgency = searchParams.get('urgency') ?? 'flexible';
+  const paramLat = searchParams.get('lat');
+  const paramLng = searchParams.get('lng');
 
   const [providers, setProviders] = useState<ProviderResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ function ResultsContent() {
 
   useEffect(() => {
     void fetchProviders();
-  }, [category, location]);
+  }, [category, location, paramLat, paramLng]);
 
   async function fetchProviders() {
     setLoading(true);
@@ -40,7 +42,11 @@ function ResultsContent() {
     try {
       let lat: number, lng: number;
 
-      if (location) {
+      if (paramLat && paramLng) {
+        // GPS coords passed directly from search page — no geocode round-trip needed.
+        lat = parseFloat(paramLat);
+        lng = parseFloat(paramLng);
+      } else if (location) {
         const geo = await apiFetch<{ lat: number; lng: number }>('/api/geocode', {
           method: 'POST',
           body: JSON.stringify({ location }),
@@ -49,6 +55,9 @@ function ResultsContent() {
         lng = geo.lng;
       } else {
         // Fall back to browser geolocation
+        if (!navigator.geolocation) {
+          throw new Error('Geolocation is not supported by your browser. Enter a ZIP or city on the search page.');
+        }
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject)
         );
