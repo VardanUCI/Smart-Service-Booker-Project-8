@@ -30,7 +30,7 @@ export async function GET() {
 
   if (error) {
     console.error('availability_slots fetch error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ slots: data });

@@ -1,4 +1,4 @@
-// GET returns aggregated dashboard stats (open slots, pending requests, fill rate, etc.) for the authenticated provider via RPC.
+// GET returns open dispatch requests near the authenticated provider, via RPC.
 
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
@@ -12,14 +12,14 @@ export async function GET() {
     return NextResponse.json({ error: authError }, { status });
   }
 
-  const { data, error } = await supabase.rpc('get_provider_dashboard_stats', {
+  const { data, error } = await supabase.rpc('get_open_dispatch_requests_for_provider', {
     p_provider_id: account.user.id,
   });
 
   if (error) {
-    console.error('get_provider_dashboard_stats error:', error);
+    console.error('get_open_dispatch_requests_for_provider error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
-  return NextResponse.json({ stats: data });
+  return NextResponse.json({ dispatch_requests: data ?? [] });
 }
