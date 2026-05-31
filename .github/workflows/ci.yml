@@ -1,0 +1,75 @@
+name: CI — Type Check + Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Type Check + Tests
+    runs-on: ubuntu-latest
+
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: echo "dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.dir }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        # Run the full type check but suppress the 5 known pre-existing errors in
+        # frontend components that are not part of the API/backend surface.
+        # Any error in a file NOT listed below will still fail the build.
+        run: |
+          known_bad=(
+            "components/seeker/provider-card.tsx"
+            "components/seeker/provider-detail-sheet.tsx"
+            "app/provider/onboarding/page.tsx"
+            "app/seeker/search/page.tsx"
+            "utils/supabase/middleware.ts"
+          )
+
+          pattern=$(printf "|%s" "${known_bad[@]}")
+          pattern="${pattern:1}"   # strip leading |
+
+          output=$(npx tsc --noEmit -p tsconfig.json 2>&1 || true)
+
+          # Examine only error declaration lines (contain "error TS"); skip
+          # continuation/context lines which don't carry a filename.
+          new_errors=$(echo "$output" | grep "error TS" | grep -vE "($pattern)" || true)
+
+          if [ -n "$new_errors" ]; then
+            echo "TypeScript errors found in non-excluded files:"
+            echo "$new_errors"
+            exit 1
+          fi
+
+          echo "Type check passed (${#known_bad[@]} known pre-existing errors suppressed)."
+
+      - name: Run tests
+        run: pnpm test

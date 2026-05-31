@@ -11,12 +11,11 @@ const dispatchSchema = z.object({
   latitude: z.number({ required_error: 'latitude is required', invalid_type_error: 'latitude must be a number' }),
   longitude: z.number({ required_error: 'longitude is required', invalid_type_error: 'longitude must be a number' }),
   radius_meters: z.number().int().min(500).max(50000).default(10000),
-  expires_in_minutes: z.union([
-    z.literal(30),
-    z.literal(60),
-    z.literal(120),
-    z.literal(240),
-  ], { invalid_type_error: 'expires_in_minutes must be 30, 60, 120, or 240' }),
+  expires_in_minutes: z
+    .number({ required_error: 'expires_in_minutes is required', invalid_type_error: 'expires_in_minutes must be a number' })
+    .refine((v) => [30, 60, 120, 240].includes(v), {
+      message: 'expires_in_minutes must be 30, 60, 120, or 240',
+    }),
 });
 
 export async function POST(request: NextRequest) {
