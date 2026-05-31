@@ -102,36 +102,50 @@ function ResultsContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/20">
+    <div className="min-h-screen flex flex-col bg-slate-50/30 dark:bg-slate-950/20">
       <Navbar />
-      <div className="py-8 md:py-12" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e3a5f 100%)' }}>
-        <div className="container mx-auto px-4 flex items-center gap-4">
+      
+      {/* Immersive Header Banner */}
+      <div className="relative py-12 md:py-16 overflow-hidden border-b border-slate-200 dark:border-slate-800">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900" />
+        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full opacity-20 blur-3xl bg-indigo-500 animate-pulse" />
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <div className="container mx-auto px-4 relative z-10 flex items-center gap-4">
           <Link href="/seeker/search">
-            <Button variant="ghost" size="icon" className="shrink-0 text-white hover:bg-white/10 hover:text-white"><ArrowLeft className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="shrink-0 text-white hover:bg-white/10 hover:text-white rounded-full">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Available Providers</h1>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">Available Providers</h1>
+            <p className="text-xs sm:text-sm text-slate-300">
               {loading ? 'Searching nearby…' : `${sorted.length} provider${sorted.length !== 1 ? 's' : ''} found`}
               {location && ` near "${location}"`}
             </p>
           </div>
         </div>
       </div>
-      <main className="flex-1 py-6 md:py-8">
-        <div className="container mx-auto px-4">
+
+      <main className="flex-1 py-8 md:py-12">
+        <div className="container mx-auto px-4 max-w-4xl">
 
           {error && <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>}
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          {/* Search/Filter Bar */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-8 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search providers…" value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+              <Input 
+                placeholder="Search providers by name…" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                className="pl-10 h-11 border-slate-200 dark:border-slate-800 rounded-xl focus-visible:ring-indigo-500" 
+              />
             </div>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SlidersHorizontal className="h-4 w-4 mr-2" />
+              <SelectTrigger className="w-full sm:w-[180px] h-11 border-slate-200 dark:border-slate-800 rounded-xl">
+                <SlidersHorizontal className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -140,31 +154,42 @@ function ResultsContent() {
             </Select>
           </div>
 
+          {/* Bulk Selection Action Bar */}
           {selectedProviders.length > 0 && (
-            <div className="flex items-center justify-between p-4 mb-6 bg-primary/5 border border-primary/20 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-primary text-primary-foreground">{selectedProviders.length}</Badge>
-                <span className="text-sm font-medium text-foreground">
-                  {selectedProviders.length === 1 ? 'provider selected' : 'providers selected'}
+            <div className="flex items-center justify-between p-4 mb-6 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/60 rounded-xl animate-fade-in shadow-sm">
+              <div className="flex items-center gap-3">
+                <Badge className="bg-indigo-600 text-white font-bold px-2 py-0.5 rounded-full">{selectedProviders.length}</Badge>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  {selectedProviders.length === 1 ? 'Provider selected' : 'Providers selected'} to join in bulk
                 </span>
               </div>
-              <Button onClick={() => setIsJoinDialogOpen(true)}>Join Waitlists</Button>
+              <Button 
+                onClick={() => setIsJoinDialogOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm font-semibold hover:-translate-y-0.5 transition-all duration-200 rounded-lg cursor-pointer text-xs"
+              >
+                Join Selected Waitlists
+              </Button>
             </div>
           )}
 
+          {/* Search Results Listing */}
           {loading ? (
-            <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
           ) : sorted.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="max-w-[180px] mx-auto mb-2">
+            <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 p-8 shadow-sm">
+              <div className="max-w-[180px] mx-auto mb-4">
                 <NoResultsIllustration />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No providers found nearby</h3>
-              <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">No providers found nearby</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 Try expanding your search area or choosing a different category
               </p>
               <Link href="/seeker/search">
-                <Button variant="outline" className="gap-2"><Search className="h-4 w-4" /> New Search</Button>
+                <Button variant="outline" className="gap-2 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900">
+                  <Search className="h-4 w-4" /> New Search
+                </Button>
               </Link>
             </div>
           ) : (
