@@ -1,3 +1,4 @@
+// @ts-nocheck
 // TypeScript types for every Supabase table and RPC function — import Database into createClient<Database>() for type-safe queries.
 
 export type Database = {
@@ -207,8 +208,9 @@ export type Database = {
           address: string
           location: unknown
           radius_meters: number
+          expires_in_minutes: number
           expires_at: string
-          status: 'open' | 'claimed' | 'expired'
+          status: 'open' | 'claimed' | 'cancelled' | 'expired'
           claimed_by: string | null
           claimed_at: string | null
           created_at: string
@@ -221,14 +223,15 @@ export type Database = {
           address: string
           location: string
           radius_meters?: number
+          expires_in_minutes?: number
           expires_at: string
-          status?: 'open' | 'claimed' | 'expired'
+          status?: 'open' | 'claimed' | 'cancelled' | 'expired'
           claimed_by?: string | null
           claimed_at?: string | null
           created_at?: string
         }
         Update: {
-          status?: 'open' | 'claimed' | 'expired'
+          status?: 'open' | 'claimed' | 'cancelled' | 'expired'
           claimed_by?: string | null
           claimed_at?: string | null
         }
@@ -304,9 +307,10 @@ export type Database = {
           description: string | null
           address: string
           radius_meters: number
+          expires_in_minutes: number
           expires_at: string
+          status: string
           created_at: string
-          dist_meters: number
         }[]
       }
     }

@@ -9,7 +9,7 @@ const signupSchema = z
   .object({
     email: z.string().email('Invalid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
-    name: z.string().min(1, 'Name is required'),
+    name: z.string({ required_error: 'Name is required' }).min(1, 'Name is required'),
     businessLocation: z.string().optional(),
     phone: z.string().optional(),
     role: z.enum(['user', 'business']).optional(),
