@@ -96,6 +96,18 @@ export default function AccountPage() {
     return () => URL.revokeObjectURL(previewUrl);
   }, [avatarFile]);
 
+  useEffect(() => {
+    const previousHtmlOverflowX = document.documentElement.style.overflowX;
+    const previousBodyOverflowX = document.body.style.overflowX;
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+
+    return () => {
+      document.documentElement.style.overflowX = previousHtmlOverflowX;
+      document.body.style.overflowX = previousBodyOverflowX;
+    };
+  }, []);
+
   const initials = useMemo(() => {
     const source = displayName || account?.email || 'A';
     return source
@@ -190,14 +202,14 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/20">
+    <div className="min-h-screen flex flex-col overflow-x-hidden bg-muted/20">
       <Navbar />
       <main className="flex-1 py-8 md:py-10">
         <div className="container mx-auto max-w-4xl px-4">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">Account</h1>
-              <p className="text-muted-foreground">Manage your Smart Service Booker profile.</p>
+              <p className="text-muted-foreground">Manage your Bizskip profile.</p>
             </div>
             {account ? (
               <Badge variant="outline" className="h-8 gap-2 capitalize">
@@ -222,9 +234,9 @@ export default function AccountPage() {
               </CardContent>
             </Card>
           ) : account ? (
-            <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-              <div className="space-y-6">
-                <Card>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="min-w-0 space-y-6">
+                <Card className="min-w-0">
                   <CardHeader>
                     <CardTitle>Profile</CardTitle>
                     <CardDescription>Your public account details.</CardDescription>
@@ -375,7 +387,7 @@ export default function AccountPage() {
                 </Card>
               </div>
 
-              <Card className="h-fit">
+              <Card className="h-fit min-w-0">
                 <CardHeader>
                   <CardTitle>Account Summary</CardTitle>
                 </CardHeader>

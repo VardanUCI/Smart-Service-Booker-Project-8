@@ -25,23 +25,28 @@ export function ProviderCard({ provider, distanceLabel, isSelected, onToggleSele
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4 mb-2">
-              <div>
-                <h3 className="font-semibold text-foreground text-lg">{provider.business_name}</h3>
-                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" /> {distanceLabel}
-                  </span>
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                  {provider.business_name.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg leading-snug">{provider.business_name}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {distanceLabel}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <Badge className="bg-blue-100 text-blue-700 border-blue-200" variant="outline">
-                Waitlist Open
+              <Badge className="bg-green-50 text-green-700 border-green-200" variant="outline">
+                Open
               </Badge>
             </div>
 
-            <div className="flex items-center justify-end mt-4">
-              <Button size="sm" onClick={onJoin} className="gap-1">
-                <CheckCircle2 className="h-4 w-4" /> Join
+            <div className="flex items-center justify-end">
+              <Button size="sm" onClick={onJoin} className="gap-1.5">
+                <CheckCircle2 className="h-4 w-4" /> Join Waitlist
               </Button>
             </div>
           </div>

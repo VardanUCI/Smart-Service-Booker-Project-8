@@ -6,13 +6,14 @@ import { Footer } from '@/components/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, MapPin, Clock, Home, Filter, LocateFixed, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { Search, MapPin, Clock, Home, LocateFixed, Loader2, Check } from 'lucide-react';
 import { categories, urgencyLevels, serviceTypes, CategoryId } from '@/lib/constants';
 
 export default function SearchPage() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryId | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId | ''>('pet-care');
   const [location, setLocation] = useState('');
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -111,20 +112,55 @@ export default function SearchPage() {
       <Navbar />
       <main className="flex-1 py-8 md:py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-              Find a Service
-            </h1>
-            <p className="text-muted-foreground">
-              Search for local providers and join their waitlist
-            </p>
+          {/* Header banner */}
+          <div className="max-w-2xl mx-auto text-center mb-6">
+            <div className="relative w-full h-44 rounded-2xl overflow-hidden shadow-md">
+              <Image src="/search-illustration.jpg" alt="" fill className="object-cover object-center" quality={80} />
+              <div className="absolute inset-0 bg-indigo-900/55 flex flex-col items-center justify-center">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 drop-shadow">Find a Service</h1>
+                <p className="text-white/85 text-base">Search local providers and join their waitlist</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Service category photo strip */}
+          <div className="max-w-2xl mx-auto mb-8">
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { src: '/cat-pet.jpg', label: 'Pet Care' },
+                { src: '/cat-medical.jpg', label: 'Medical' },
+                { src: '/cat-food.jpg', label: 'Dining' },
+                { src: '/cat-home.jpg', label: 'Home' },
+              ].map((cat) => {
+                const map: Record<string, string> = { 'Pet Care': 'pet-care', Medical: 'medical', Dining: 'food-dining', Home: 'home-services' };
+                const categoryId = map[cat.label] as CategoryId;
+                const isSelected = selectedCategory === categoryId;
+
+                return (
+                  <div key={cat.label} className={`relative rounded-xl overflow-hidden h-20 shadow-sm cursor-pointer group ${isSelected ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}
+                    onClick={() => {
+                      setSelectedCategory(categoryId);
+                    }}>
+                    <Image src={cat.src} alt={cat.label} fill className="object-cover transition-transform duration-200 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-indigo-900/45 group-hover:bg-indigo-900/30 transition-colors flex items-end justify-center pb-2">
+                      <span className="text-white text-xs font-semibold drop-shadow">{cat.label}</span>
+                    </div>
+                    {isSelected ? (
+                      <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white shadow-sm">
+                        <Check className="h-4 w-4" />
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Filter className="h-5 w-5 text-primary" />
-                Search Filters
+                <Search className="h-5 w-5 text-primary" />
+                What are you looking for?
               </CardTitle>
             </CardHeader>
             <CardContent>

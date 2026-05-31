@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { PawPrint, Stethoscope, UtensilsCrossed, Wrench, Sparkles, Briefcase } from 'lucide-react';
 
@@ -7,54 +9,60 @@ const categories = [
     name: 'Pet Care',
     description: 'Vets, groomers, pet sitters',
     icon: PawPrint,
-    cardClass: 'border-neutral-200 hover:border-amber-300 hover:bg-amber-50',
-    iconBgClass: 'bg-amber-100',
-    iconColorClass: 'text-amber-600',
+    gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+    iconBg: 'bg-amber-400',
+    iconColor: 'text-white',
+    hoverShadow: '0 8px 28px rgba(251,191,36,0.35)',
   },
   {
     id: 'medical',
     name: 'Medical Care',
     description: 'Doctors, dentists, specialists',
     icon: Stethoscope,
-    cardClass: 'border-neutral-200 hover:border-rose-300 hover:bg-rose-50',
-    iconBgClass: 'bg-rose-100',
-    iconColorClass: 'text-rose-600',
+    gradient: 'linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%)',
+    iconBg: 'bg-rose-500',
+    iconColor: 'text-white',
+    hoverShadow: '0 8px 28px rgba(244,63,94,0.25)',
   },
   {
     id: 'food-dining',
     name: 'Food & Dining',
     description: 'Restaurants, cafes, bakeries',
     icon: UtensilsCrossed,
-    cardClass: 'border-neutral-200 hover:border-orange-300 hover:bg-orange-50',
-    iconBgClass: 'bg-orange-100',
-    iconColorClass: 'text-orange-600',
+    gradient: 'linear-gradient(135deg, #ffedd5 0%, #fdba74 100%)',
+    iconBg: 'bg-orange-500',
+    iconColor: 'text-white',
+    hoverShadow: '0 8px 28px rgba(249,115,22,0.25)',
   },
   {
     id: 'home-services',
     name: 'Home Services',
     description: 'Plumbers, electricians, cleaners',
     icon: Wrench,
-    cardClass: 'border-neutral-200 hover:border-sky-300 hover:bg-sky-50',
-    iconBgClass: 'bg-sky-100',
-    iconColorClass: 'text-sky-600',
+    gradient: 'linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 100%)',
+    iconBg: 'bg-sky-500',
+    iconColor: 'text-white',
+    hoverShadow: '0 8px 28px rgba(14,165,233,0.25)',
   },
   {
     id: 'beauty-wellness',
     name: 'Beauty & Wellness',
     description: 'Salons, spas, nail studios',
     icon: Sparkles,
-    cardClass: 'border-neutral-200 hover:border-fuchsia-300 hover:bg-fuchsia-50',
-    iconBgClass: 'bg-fuchsia-100',
-    iconColorClass: 'text-fuchsia-600',
+    gradient: 'linear-gradient(135deg, #fae8ff 0%, #e879f9 100%)',
+    iconBg: 'bg-fuchsia-500',
+    iconColor: 'text-white',
+    hoverShadow: '0 8px 28px rgba(217,70,239,0.25)',
   },
   {
     id: 'professional',
     name: 'Professional Services',
     description: 'Lawyers, accountants, consultants',
     icon: Briefcase,
-    cardClass: 'border-neutral-200 hover:border-indigo-300 hover:bg-indigo-50',
-    iconBgClass: 'bg-indigo-100',
-    iconColorClass: 'text-indigo-600',
+    gradient: 'linear-gradient(135deg, #e0e7ff 0%, #818cf8 100%)',
+    iconBg: 'bg-indigo-500',
+    iconColor: 'text-white',
+    hoverShadow: '0 8px 28px rgba(99,102,241,0.25)',
   },
 ];
 
@@ -82,17 +90,20 @@ export function CategoryGrid() {
               className="group"
             >
               <div
-                className={`h-full rounded-2xl border bg-white transition-all duration-200 p-5 md:p-6 hover:-translate-y-0.5 hover:shadow-lg ${category.cardClass}`}
+                className="h-full rounded-2xl border-0 transition-all duration-200 p-5 md:p-6 hover:-translate-y-1 cursor-pointer"
+                style={{ background: category.gradient, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = category.hoverShadow; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
               >
                 <div
-                  className={`h-12 w-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-110 ${category.iconBgClass}`}
+                  className={`h-12 w-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-110 ${category.iconBg}`}
                 >
-                  <category.icon className={`h-6 w-6 ${category.iconColorClass}`} />
+                  <category.icon className={`h-6 w-6 ${category.iconColor}`} />
                 </div>
-                <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors duration-200">
+                <h3 className="font-semibold text-gray-800 mb-1">
                   {category.name}
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   {category.description}
                 </p>
               </div>

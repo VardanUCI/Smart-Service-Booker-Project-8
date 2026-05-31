@@ -21,6 +21,12 @@ export const categories = [
     description: 'Doctors, nurses, clinics',
   },
   {
+    id: 'food-dining',
+    name: 'Dining',
+    icon: 'Utensils',
+    description: 'Restaurants, cafes, catering',
+  },
+  {
     id: 'home-services',
     name: 'Home Services',
     icon: 'Home',
@@ -37,6 +43,7 @@ export const categories = [
 export const serviceTypes: Record<string, string[]> = {
   'pet-care': ['Veterinary visit', 'Grooming', 'Pet boarding', 'Pet sitting'],
   medical: ['Primary care', 'Urgent care', 'Dental visit', 'Physical therapy'],
+  'food-dining': ['Restaurant table', 'Cafe seating', 'Catering', 'Private dining'],
   'home-services': ['Plumbing', 'Electrical', 'Cleaning', 'Handyman'],
   education: ['Tutoring', 'Coaching', 'Music lesson', 'Test prep'],
 };

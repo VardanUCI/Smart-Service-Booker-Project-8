@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BrandLogo } from '@/components/brand-logo';
 
 export default function SignOutPage() {
   const router = useRouter();
@@ -41,13 +42,7 @@ export default function SignOutPage() {
     >
       <div className="mx-auto w-full max-w-md">
         <Link href="/" className="mb-8 inline-flex items-center gap-2 text-white/90 hover:text-white">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg"
-            style={{ background: 'linear-gradient(135deg, #4f46e5, #2563eb)' }}
-          >
-            <Clock className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-semibold">Smart Service Booker</span>
+          <BrandLogo textClassName="text-white" />
         </Link>
 
         <Card className="border-white/20 bg-white/95 backdrop-blur">

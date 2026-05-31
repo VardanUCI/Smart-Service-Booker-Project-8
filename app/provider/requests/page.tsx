@@ -115,9 +115,11 @@ export default function RequestsPage() {
               <TabsContent value="all" className="space-y-4">
                 {sortedRequests.length === 0 ? (
                   <Card><CardContent className="py-12 text-center">
-                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
+                      <Clock className="h-8 w-8 text-indigo-300" />
+                    </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">No pending requests</h3>
-                    <p className="text-muted-foreground">New customer requests will appear here</p>
+                    <p className="text-muted-foreground max-w-sm mx-auto">When customers join your waitlist, their requests will show up here for you to manage.</p>
                   </CardContent></Card>
                 ) : sortedRequests.map((r) => (
                   <RequestCard key={r.id} request={r} onAction={handleAction} />
@@ -127,9 +129,11 @@ export default function RequestsPage() {
               <TabsContent value="urgent" className="space-y-4">
                 {sortedRequests.filter((r) => r.urgency === 'now').length === 0 ? (
                   <Card><CardContent className="py-12 text-center">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <div className="h-16 w-16 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="h-8 w-8 text-green-400" />
+                    </div>
                     <h3 className="text-lg font-semibold text-foreground mb-2">No urgent requests</h3>
-                    <p className="text-muted-foreground">You&apos;re all caught up!</p>
+                    <p className="text-muted-foreground">All clear — no one needs you urgently right now</p>
                   </CardContent></Card>
                 ) : sortedRequests.filter((r) => r.urgency === 'now').map((r) => (
                   <RequestCard key={r.id} request={r} onAction={handleAction} />

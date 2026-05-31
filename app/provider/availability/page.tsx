@@ -192,10 +192,12 @@ export default function AvailabilityPage() {
                   </CardHeader>
                   <CardContent>
                     {items.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Clock className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                        <p>No slots for {label.toLowerCase()}</p>
-                        <Button variant="outline" className="mt-4" onClick={() => setIsAddDialogOpen(true)}>Add Slot</Button>
+                      <div className="text-center py-8">
+                        <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
+                          <Clock className="h-7 w-7 text-indigo-300" />
+                        </div>
+                        <p className="text-muted-foreground">No slots for {label.toLowerCase()}</p>
+                        <Button variant="outline" className="mt-4 gap-2" onClick={() => setIsAddDialogOpen(true)}><Plus className="h-4 w-4" /> Add Slot</Button>
                       </div>
                     ) : (
                       <div className="space-y-3">

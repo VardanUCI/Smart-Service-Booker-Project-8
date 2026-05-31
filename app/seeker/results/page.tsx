@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Search, MapPin, SlidersHorizontal, Loader2 } from 'lucide-react';
+import { NoResultsIllustration } from '@/components/illustrations';
 import { apiFetch } from '@/lib/api';
 import type { ProviderResult } from '@/lib/types';
 import { formatDistance } from '@/lib/types';
@@ -103,20 +104,22 @@ function ResultsContent() {
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
+      <div className="py-8 md:py-12" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e3a5f 100%)' }}>
+        <div className="container mx-auto px-4 flex items-center gap-4">
+          <Link href="/seeker/search">
+            <Button variant="ghost" size="icon" className="shrink-0 text-white hover:bg-white/10 hover:text-white"><ArrowLeft className="h-5 w-5" /></Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Available Providers</h1>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
+              {loading ? 'Searching nearby…' : `${sorted.length} provider${sorted.length !== 1 ? 's' : ''} found`}
+              {location && ` near "${location}"`}
+            </p>
+          </div>
+        </div>
+      </div>
       <main className="flex-1 py-6 md:py-8">
         <div className="container mx-auto px-4">
-          <div className="flex items-center gap-4 mb-6">
-            <Link href="/seeker/search">
-              <Button variant="ghost" size="icon" className="shrink-0"><ArrowLeft className="h-5 w-5" /></Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Available Providers</h1>
-              <p className="text-sm text-muted-foreground">
-                {loading ? 'Searching…' : `${sorted.length} provider${sorted.length !== 1 ? 's' : ''} found`}
-                {location && ` near "${location}"`}
-              </p>
-            </div>
-          </div>
 
           {error && <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>}
 
@@ -153,9 +156,16 @@ function ResultsContent() {
             <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
           ) : sorted.length === 0 ? (
             <div className="text-center py-12">
-              <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No providers found</h3>
-              <p className="text-muted-foreground">Try adjusting your search or location</p>
+              <div className="max-w-[180px] mx-auto mb-2">
+                <NoResultsIllustration />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No providers found nearby</h3>
+              <p className="text-muted-foreground mb-4 max-w-sm mx-auto">
+                Try expanding your search area or choosing a different category
+              </p>
+              <Link href="/seeker/search">
+                <Button variant="outline" className="gap-2"><Search className="h-4 w-4" /> New Search</Button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-4">
