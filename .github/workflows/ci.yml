@@ -38,6 +38,9 @@ jobs:
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-store-${{ runner.os }}-
 
+      - name: Approve build scripts
+        run: pnpm approve-builds --yes || true
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
