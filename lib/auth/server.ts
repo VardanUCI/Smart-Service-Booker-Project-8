@@ -38,10 +38,10 @@ export async function ensureUserProfile(
     .eq('id', user.id)
     .maybeSingle();
 
-  // preferredRole (from signup body or auth metadata) takes precedence over the
-  // DB row's current role so that a Supabase trigger that auto-creates the row
-  // with the default 'user' role doesn't silently override a 'business' signup.
-  const role = normalizeAccountRole(preferredRole ?? existingProfile?.role ?? getRoleFromUserMetadata(user));
+  const metadataRole = getRoleFromUserMetadata(user);
+  const existingRole = normalizeAccountRole(existingProfile?.role);
+  const requestedRole = normalizeAccountRole(preferredRole ?? metadataRole);
+  const role: AccountRole = existingRole === 'business' || requestedRole === 'business' ? 'business' : 'user';
   const name =
     typeof user.user_metadata?.name === 'string' && user.user_metadata.name.trim()
       ? user.user_metadata.name
