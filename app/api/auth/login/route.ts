@@ -13,7 +13,7 @@ import {
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string({ required_error: 'Password is required' }).min(1, 'Password is required'),
 });
 
 export async function POST(request: NextRequest) {
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
     console.error('Supabase signIn error:', authError);
-    return NextResponse.json({ error: authError.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   if (!isEmailVerified(authData.user)) {

@@ -21,6 +21,12 @@ export const categories = [
     description: 'Doctors, nurses, clinics',
   },
   {
+    id: 'food-dining',
+    name: 'Dining',
+    icon: 'Utensils',
+    description: 'Restaurants, cafes, catering',
+  },
+  {
     id: 'home-services',
     name: 'Home Services',
     icon: 'Home',
@@ -32,13 +38,28 @@ export const categories = [
     icon: 'Book',
     description: 'Tutors, trainers, coaches',
   },
+  {
+    id: 'beauty-wellness',
+    name: 'Beauty & Wellness',
+    icon: 'Sparkles',
+    description: 'Salons, spas, wellness services',
+  },
+  {
+    id: 'professional-services',
+    name: 'Professional Services',
+    icon: 'Briefcase',
+    description: 'Consultants, legal, financial',
+  },
 ] as const;
 
 export const serviceTypes: Record<string, string[]> = {
   'pet-care': ['Veterinary visit', 'Grooming', 'Pet boarding', 'Pet sitting'],
   medical: ['Primary care', 'Urgent care', 'Dental visit', 'Physical therapy'],
+  'food-dining': ['Restaurant table', 'Cafe seating', 'Catering', 'Private dining'],
   'home-services': ['Plumbing', 'Electrical', 'Cleaning', 'Handyman'],
   education: ['Tutoring', 'Coaching', 'Music lesson', 'Test prep'],
+  'beauty-wellness': ['Salons', 'Spas', 'Nail studios'],
+  'professional-services': ['Lawyers', 'Accountants', 'Consultants'],
 };
 
 export const urgencyLevels = [

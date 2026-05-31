@@ -14,7 +14,7 @@ export async function POST() {
 
   if (error) {
     console.error('Supabase signOut error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   const response = NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });

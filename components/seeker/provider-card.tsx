@@ -25,21 +25,26 @@ export function ProviderCard({ provider, distanceLabel, isSelected, onToggleSele
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-4 mb-2">
-              <div>
-                <h3 className="font-semibold text-foreground text-lg">{provider.business_name}</h3>
-                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" /> {distanceLabel}
-                  </span>
-                  {provider.rating !== undefined && provider.rating !== null && (
-                    <span className="flex items-center gap-1 text-amber-500 font-semibold">
-                      <Star className="h-4 w-4 fill-amber-500 text-amber-500" /> {provider.rating.toFixed(1)}
-                      {provider.review_count !== undefined && provider.review_count > 0 && (
-                        <span className="text-muted-foreground font-normal text-xs">({provider.review_count} reviews)</span>
-                      )}
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                  {provider.business_name.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg leading-snug">{provider.business_name}</h3>
+                  <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {distanceLabel}
                     </span>
-                  )}
+                    {provider.rating !== undefined && provider.rating !== null && (
+                      <span className="flex items-center gap-1 text-amber-500 font-semibold">
+                        <Star className="h-4 w-4 fill-amber-500 text-amber-500" /> {provider.rating.toFixed(1)}
+                        {provider.review_count !== undefined && provider.review_count > 0 && (
+                          <span className="text-muted-foreground font-normal text-xs">({provider.review_count} reviews)</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <Badge className="bg-blue-100 text-blue-700 border-blue-200" variant="outline">

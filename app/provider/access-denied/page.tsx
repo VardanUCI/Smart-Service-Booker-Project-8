@@ -13,12 +13,12 @@ export default function ProviderAccessDeniedPage() {
         <div className="container mx-auto max-w-xl px-4">
           <Card>
             <CardHeader>
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                <Building2 className="h-6 w-6 text-primary" />
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50">
+                <Building2 className="h-7 w-7 text-indigo-400" />
               </div>
-              <CardTitle>This dashboard is only available for business accounts.</CardTitle>
+              <CardTitle>Business dashboard is for provider accounts</CardTitle>
               <CardDescription>
-                Your current account can still search providers, join waitlists, and manage user settings.
+                You&apos;re currently signed in as a customer. You can still search for services, join waitlists, and get notified when spots open.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 sm:flex-row">

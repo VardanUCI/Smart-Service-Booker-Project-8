@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Clock, Users, TrendingUp, Shield, Zap, Calendar } from 'lucide-react';
 
 const seekerBenefits = [
@@ -55,9 +56,14 @@ export function ValueProps() {
         <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           
           <div
-            className="rounded-2xl p-8 shadow-sm"
+            className="rounded-2xl shadow-sm overflow-hidden"
             style={{ background: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', border: '1px solid #c7d2fe' }}
           >
+            <div className="relative h-44 w-full">
+              <Image src="/value-seeker.jpg" alt="Service seeker" fill className="object-cover object-top" />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 30%, rgba(238,242,255,0.97) 100%)' }} />
+            </div>
+            <div className="p-8 pt-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold mb-6" style={{ background: '#c7d2fe', color: '#3730a3' }}>
               For Service Seekers
             </div>
@@ -80,13 +86,18 @@ export function ValueProps() {
                 </div>
               ))}
             </div>
+            </div>
           </div>
 
-          
           <div
-            className="rounded-2xl p-8 shadow-sm"
+            className="rounded-2xl shadow-sm overflow-hidden"
             style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '1px solid #a7f3d0' }}
           >
+            <div className="relative h-44 w-full">
+              <Image src="/value-provider.jpg" alt="Service provider" fill className="object-cover object-top" />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 30%, rgba(236,253,245,0.97) 100%)' }} />
+            </div>
+            <div className="p-8 pt-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold mb-6" style={{ background: '#a7f3d0', color: '#065f46' }}>
               For Service Providers
             </div>
@@ -108,6 +119,7 @@ export function ValueProps() {
                   </div>
                 </div>
               ))}
+            </div>
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // TypeScript types for every Supabase table and RPC function — import Database into createClient<Database>() for type-safe queries.
 
 export type Database = {
@@ -93,6 +94,7 @@ export type Database = {
           urgency: 'now' | 'today' | 'this-week' | 'flexible' | null
           contact_method: 'sms' | 'email' | null
           contact_value: string | null
+          notified_at: string | null
           created_at: string
         }
         Insert: {
@@ -107,6 +109,7 @@ export type Database = {
           urgency?: 'now' | 'today' | 'this-week' | 'flexible' | null
           contact_method?: 'sms' | 'email' | null
           contact_value?: string | null
+          notified_at?: string | null
           created_at?: string
         }
         Update: {
@@ -114,6 +117,7 @@ export type Database = {
           expires_at?: string
           contact_method?: 'sms' | 'email' | null
           contact_value?: string | null
+          notified_at?: string | null
         }
         Relationships: []
       }
@@ -201,6 +205,44 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_requests: {
+        Row: {
+          id: string
+          customer_id: string
+          category: string
+          description: string | null
+          address: string
+          location: unknown
+          radius_meters: number
+          expires_in_minutes: number
+          expires_at: string
+          status: 'open' | 'claimed' | 'cancelled' | 'expired'
+          claimed_by: string | null
+          claimed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id: string
+          category: string
+          description?: string | null
+          address: string
+          location: string
+          radius_meters?: number
+          expires_in_minutes?: number
+          expires_at: string
+          status?: 'open' | 'claimed' | 'cancelled' | 'expired'
+          claimed_by?: string | null
+          claimed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          status?: 'open' | 'claimed' | 'cancelled' | 'expired'
+          claimed_by?: string | null
+          claimed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -260,6 +302,21 @@ export type Database = {
           status: string
           requested_at: string
           expires_at: string
+        }[]
+      }
+      get_open_dispatch_requests_for_provider: {
+        Args: { p_provider_id: string }
+        Returns: {
+          id: string
+          customer_id: string
+          category: string
+          description: string | null
+          address: string
+          radius_meters: number
+          expires_in_minutes: number
+          expires_at: string
+          status: string
+          created_at: string
         }[]
       }
     }

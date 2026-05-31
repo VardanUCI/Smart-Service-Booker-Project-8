@@ -20,7 +20,7 @@ export async function GET() {
 
   if (error) {
     console.error('notifications fetch error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ notifications: data });
@@ -43,7 +43,7 @@ export async function PATCH() {
 
   if (error) {
     console.error('notifications mark-all-read error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

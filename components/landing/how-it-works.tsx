@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Search, ListChecks, Bell } from 'lucide-react';
 
 const steps = [
@@ -8,6 +9,7 @@ const steps = [
     description: 'Find what you need by type, location, and urgency. See who has real openings right now.',
     gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)',
     glow: 'rgba(99,102,241,0.25)',
+    photo: '/step-search.jpg',
   },
   {
     icon: ListChecks,
@@ -16,6 +18,7 @@ const steps = [
     description: "Don't bet on just one option. Join several at once and dramatically improve your chances.",
     gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
     glow: 'rgba(139,92,246,0.25)',
+    photo: '/step-calendar.jpg',
   },
   {
     icon: Bell,
@@ -24,6 +27,7 @@ const steps = [
     description: 'When a spot opens up, we alert you right away. Claim it or skip it — completely your call.',
     gradient: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
     glow: 'rgba(168,85,247,0.25)',
+    photo: '/step-notify.jpg',
   },
 ];
 
@@ -43,25 +47,34 @@ export function HowItWorks() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-10 max-w-5xl mx-auto relative">
-          
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto relative">
           <div className="hidden md:block absolute top-10 left-[calc(16.66%+2.5rem)] right-[calc(16.66%+2.5rem)] h-px" style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7)' }} />
 
           {steps.map((step) => (
-            <div key={step.title} className="relative z-10 flex flex-col items-center text-center">
-              
-              <div
-                className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5 shadow-lg"
-                style={{ background: step.gradient, boxShadow: `0 8px 24px ${step.glow}` }}
-              >
-                <step.icon className="h-9 w-9 text-white" />
+            <div
+              key={step.title}
+              className="relative z-10 flex flex-col bg-white rounded-2xl shadow-sm border border-indigo-100/60 hover:shadow-md transition-shadow duration-200 overflow-hidden"
+            >
+              {/* Step photo */}
+              <div className="relative h-40 w-full">
+                <Image src={step.photo} alt={step.title} fill className="object-cover" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(255,255,255,0.95) 100%)' }} />
+                {/* Icon badge over the photo */}
+                <div
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg"
+                  style={{ background: step.gradient, boxShadow: `0 8px 24px ${step.glow}` }}
+                >
+                  <step.icon className="h-7 w-7 text-white" />
+                </div>
               </div>
 
-              <span className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: '#a5b4fc' }}>
-                Step {step.step}
-              </span>
-              <h3 className="text-xl font-semibold text-foreground mb-2">{step.title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">{step.description}</p>
+              <div className="flex flex-col items-center text-center px-6 pb-7 pt-3">
+                <span className="text-xs font-bold tracking-widest uppercase mb-1.5" style={{ color: '#6366f1' }}>
+                  Step {step.step}
+                </span>
+                <h3 className="text-lg font-semibold text-foreground mb-2">{step.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{step.description}</p>
+              </div>
             </div>
           ))}
         </div>

@@ -18,7 +18,7 @@ export async function GET() {
 
   if (error) {
     console.error('get_provider_dashboard_stats error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   return NextResponse.json({ stats: data });

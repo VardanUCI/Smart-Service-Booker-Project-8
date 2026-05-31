@@ -139,21 +139,63 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: bookings, error: fetchError } = await supabase
+  const { data: rawBookings, error: fetchError } = await supabase
     .from('bookings')
-    .select(`
-      *,
-      providers ( business_name, category ),
-      availability_slots ( date, start_time, end_time )
-    `)
-    .eq('customer_id', user.id)
-    .order('availability_slots(date)', { ascending: true })
-    .order('availability_slots(start_time)', { ascending: true });
+    .select('*')
+    .eq('customer_id', user.id);
 
   if (fetchError) {
     console.error('bookings fetch error:', fetchError);
     return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 });
   }
+
+  if (!rawBookings || rawBookings.length === 0) {
+    return NextResponse.json({ bookings: [] }, { status: 200 });
+  }
+
+  const providerIds = [...new Set(rawBookings.map((b) => b.provider_id))];
+  const slotIds = [...new Set(rawBookings.map((b) => b.slot_id).filter((id): id is string => id !== null))];
+
+  const [providersResult, slotsResult] = await Promise.all([
+    supabase
+      .from('providers')
+      .select('id, business_name, category')
+      .in('id', providerIds),
+    slotIds.length > 0
+      ? supabase
+          .from('availability_slots')
+          .select('id, date, start_time, end_time')
+          .in('id', slotIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (providersResult.error) {
+    console.error('providers fetch error:', providersResult.error);
+    return NextResponse.json({ error: 'Failed to fetch booking details' }, { status: 500 });
+  }
+
+  if (slotsResult.error) {
+    console.error('availability_slots fetch error:', slotsResult.error);
+    return NextResponse.json({ error: 'Failed to fetch booking details' }, { status: 500 });
+  }
+
+  const providerMap = new Map((providersResult.data ?? []).map((p) => [p.id, p]));
+  const slotMap = new Map((slotsResult.data ?? []).map((s) => [s.id, s]));
+
+  const bookings = rawBookings
+    .map((booking) => ({
+      ...booking,
+      provider: providerMap.get(booking.provider_id) ?? null,
+      slot: booking.slot_id ? (slotMap.get(booking.slot_id) ?? null) : null,
+    }))
+    .sort((a, b) => {
+      const dateA = a.slot?.date ?? '';
+      const dateB = b.slot?.date ?? '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const timeA = a.slot?.start_time ?? '';
+      const timeB = b.slot?.start_time ?? '';
+      return timeA.localeCompare(timeB);
+    });
 
   return NextResponse.json({ bookings }, { status: 200 });
 }

@@ -9,7 +9,7 @@ const signupSchema = z
   .object({
     email: z.string().email('Invalid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
-    name: z.string().min(1, 'Name is required'),
+    name: z.string({ required_error: 'Name is required' }).min(1, 'Name is required'),
     businessLocation: z.string().optional(),
     phone: z.string().optional(),
     role: z.enum(['user', 'business']).optional(),
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
     }
     console.error('Supabase signUp error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
   const user = authData.user;
