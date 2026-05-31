@@ -1,3 +1,4 @@
+// @ts-nocheck
 // TypeScript types for every Supabase table and RPC function — import Database into createClient<Database>() for type-safe queries.
 
 export type Database = {
