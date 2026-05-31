@@ -60,7 +60,7 @@ jobs:
           pattern=$(printf "|%s" "${known_bad[@]}")
           pattern="${pattern:1}"   # strip leading |
 
-          output=$(npx tsc --noEmit --project tsconfig.json 2>&1 || true)
+          output=$(npx tsc --noEmit --project tsconfig.ci.json 2>&1 || true)
 
           # Examine only error declaration lines (contain "error TS"); skip
           # continuation/context lines which don't carry a filename.
