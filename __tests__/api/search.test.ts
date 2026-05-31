@@ -3,8 +3,8 @@ import { GET } from '@/app/api/search/route';
 import { makeSupabase, mockCreateClient } from '../helpers/supabase';
 
 const PROVIDERS = [
-  { id: 'prov-1', business_name: 'City Vets', dist_meters: 1200 },
-  { id: 'prov-2', business_name: 'Downtown Clinic', dist_meters: 3400 },
+  { id: 'prov-1', business_name: 'City Vets', dist_meters: 1200, rating: null, review_count: 0, waitlist_count: 0 },
+  { id: 'prov-2', business_name: 'Downtown Clinic', dist_meters: 3400, rating: null, review_count: 0, waitlist_count: 0 },
 ];
 
 function req(qs: string) {

@@ -69,7 +69,7 @@ export default function RequestsPage() {
         });
         setRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
       } else if (actionType === 'dismiss') {
-        await apiFetch(`/api/waitlists/${selectedRequest.id}`, { method: 'DELETE' });
+        await apiFetch(`/api/waitlist/${selectedRequest.id}`, { method: 'DELETE' });
         setRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
       }
       // 'notify' has no API endpoint yet — just close

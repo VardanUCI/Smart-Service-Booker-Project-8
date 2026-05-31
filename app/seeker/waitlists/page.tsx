@@ -42,7 +42,7 @@ export default function WaitlistsPage() {
 
   async function load() {
     try {
-      const data = await apiFetch<{ waitlists: WaitlistEntry[] }>('/api/waitlists');
+      const data = await apiFetch<{ waitlists: WaitlistEntry[] }>('/api/waitlist');
       setWaitlists(data.waitlists);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load waitlists');
@@ -57,7 +57,7 @@ export default function WaitlistsPage() {
     if (!selected) return;
     setCancelling(true);
     try {
-      await apiFetch(`/api/waitlists/${selected.id}`, { method: 'DELETE' });
+      await apiFetch(`/api/waitlist/${selected.id}`, { method: 'DELETE' });
       setWaitlists((prev) => prev.filter((w) => w.id !== selected.id));
       setCancelDialogOpen(false);
       setSelected(null);
