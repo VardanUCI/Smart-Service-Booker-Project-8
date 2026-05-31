@@ -7,13 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
-import { Search, MapPin, Clock, Home, LocateFixed, Loader2 } from 'lucide-react';
+import { Search, MapPin, Clock, Home, LocateFixed, Loader2, Check } from 'lucide-react';
 import { categories, urgencyLevels, serviceTypes, CategoryId } from '@/lib/constants';
 
 export default function SearchPage() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryId | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId | ''>('pet-care');
   const [location, setLocation] = useState('');
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -131,18 +131,28 @@ export default function SearchPage() {
                 { src: '/cat-medical.jpg', label: 'Medical' },
                 { src: '/cat-food.jpg', label: 'Dining' },
                 { src: '/cat-home.jpg', label: 'Home' },
-              ].map((cat) => (
-                <div key={cat.label} className="relative rounded-xl overflow-hidden h-20 shadow-sm cursor-pointer group"
-                  onClick={() => {
-                    const map: Record<string, string> = { 'Pet Care': 'pet-care', Medical: 'medical', Dining: 'food-dining', Home: 'home-services' };
-                    setSelectedCategory(map[cat.label] as CategoryId);
-                  }}>
-                  <Image src={cat.src} alt={cat.label} fill className="object-cover transition-transform duration-200 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-indigo-900/45 group-hover:bg-indigo-900/30 transition-colors flex items-end justify-center pb-2">
-                    <span className="text-white text-xs font-semibold drop-shadow">{cat.label}</span>
+              ].map((cat) => {
+                const map: Record<string, string> = { 'Pet Care': 'pet-care', Medical: 'medical', Dining: 'food-dining', Home: 'home-services' };
+                const categoryId = map[cat.label] as CategoryId;
+                const isSelected = selectedCategory === categoryId;
+
+                return (
+                  <div key={cat.label} className={`relative rounded-xl overflow-hidden h-20 shadow-sm cursor-pointer group ${isSelected ? 'ring-2 ring-green-500 ring-offset-2' : ''}`}
+                    onClick={() => {
+                      setSelectedCategory(categoryId);
+                    }}>
+                    <Image src={cat.src} alt={cat.label} fill className="object-cover transition-transform duration-200 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-indigo-900/45 group-hover:bg-indigo-900/30 transition-colors flex items-end justify-center pb-2">
+                      <span className="text-white text-xs font-semibold drop-shadow">{cat.label}</span>
+                    </div>
+                    {isSelected ? (
+                      <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white shadow-sm">
+                        <Check className="h-4 w-4" />
+                      </div>
+                    ) : null}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
