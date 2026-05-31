@@ -47,6 +47,8 @@ export type Database = {
           is_available: boolean
           available_until: string | null
           created_at: string
+          rating: number | null
+          review_count: number
         }
         Insert: {
           id: string
@@ -60,6 +62,8 @@ export type Database = {
           is_available?: boolean
           available_until?: string | null
           created_at?: string
+          rating?: number | null
+          review_count?: number
         }
         Update: {
           business_name?: string
@@ -71,6 +75,8 @@ export type Database = {
           stripe_customer_id?: string | null
           is_available?: boolean
           available_until?: string | null
+          rating?: number | null
+          review_count?: number
         }
         Relationships: []
       }
@@ -257,7 +263,6 @@ export type Database = {
         }[]
       }
     }
-    Views: {}
     Enums: {}
     CompositeTypes: {}
   }

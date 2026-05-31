@@ -49,28 +49,45 @@ export async function GET(request: NextRequest) {
   }
 
   const dbProviders = data ?? [];
-  let mergedProviders = [...dbProviders];
+  let existingGooglePlaceIds: Set<string> = new Set();
+  let dbDetailsMap: Record<string, { rating: number | null; review_count: number }> = {};
+
+  if (dbProviders.length > 0) {
+    const dbProviderIds = dbProviders.map((p) => p.id);
+    const { data: dbDetails } = await supabase
+      .from('providers')
+      .select('id, google_place_id, rating, review_count')
+      .in('id', dbProviderIds);
+    
+    if (dbDetails) {
+      existingGooglePlaceIds = new Set(
+        dbDetails
+          .map((d) => d.google_place_id)
+          .filter((id): id is string => Boolean(id))
+      );
+      dbDetailsMap = dbDetails.reduce((acc, curr) => {
+        acc[curr.id] = {
+          rating: curr.rating ?? null,
+          review_count: curr.review_count ?? 0,
+        };
+        return acc;
+      }, {} as Record<string, { rating: number | null; review_count: number }>);
+    }
+  }
+
+  // Map dbProviders to include rating and review_count
+  const mappedDbProviders = dbProviders.map((p) => ({
+    id: p.id,
+    business_name: p.business_name,
+    dist_meters: p.dist_meters,
+    rating: dbDetailsMap[p.id]?.rating ?? null,
+    review_count: dbDetailsMap[p.id]?.review_count ?? 0,
+  }));
+
+  let mergedProviders = [...mappedDbProviders];
 
   if (category) {
     try {
-      // 1. Get existing google_place_ids for providers returned by DB
-      let existingGooglePlaceIds: Set<string> = new Set();
-      if (dbProviders.length > 0) {
-        const dbProviderIds = dbProviders.map((p) => p.id);
-        const { data: dbDetails } = await supabase
-          .from('providers')
-          .select('google_place_id')
-          .in('id', dbProviderIds);
-        
-        if (dbDetails) {
-          existingGooglePlaceIds = new Set(
-            dbDetails
-              .map((d) => d.google_place_id)
-              .filter((id): id is string => Boolean(id))
-          );
-        }
-      }
-
       // 2. Call Maps API with the same lat/lon/category
       const parsedLat = parseFloat(lat);
       const parsedLon = parseFloat(lon);
@@ -96,6 +113,12 @@ export async function GET(request: NextRequest) {
               biz.location.latitude,
               biz.location.longitude
             ),
+            rating: biz.rating,
+            review_count: biz.reviewCount,
+            address: biz.address ?? null,
+            phone: null, // nearby search doesn't return phone
+            latitude: biz.location.latitude,
+            longitude: biz.location.longitude,
           }));
 
         mergedProviders = [...mergedProviders, ...filteredMapsResults];
@@ -107,5 +130,35 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ providers: mergedProviders });
+  // Get active waitlist counts for all providers with valid UUIDs
+  const allProviderIds = mergedProviders.map((p) => p.id);
+  const uuidProviderIds = allProviderIds.filter((id) => 
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  );
+
+  let waitlistCountsMap: Record<string, number> = {};
+  if (uuidProviderIds.length > 0) {
+    const { data: countsData } = await supabase
+      .from('waitlists')
+      .select('provider_id')
+      .in('provider_id', uuidProviderIds)
+      .eq('status', 'waiting')
+      .gt('expires_at', new Date().toISOString());
+
+    if (countsData) {
+      waitlistCountsMap = countsData.reduce((acc, curr) => {
+        if (curr.provider_id) {
+          acc[curr.provider_id] = (acc[curr.provider_id] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+    }
+  }
+
+  const finalProviders = mergedProviders.map((p) => ({
+    ...p,
+    waitlist_count: waitlistCountsMap[p.id] || 0,
+  }));
+
+  return NextResponse.json({ providers: finalProviders });
 }

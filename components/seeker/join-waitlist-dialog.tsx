@@ -45,7 +45,7 @@ export function JoinWaitlistDialog({
     try {
       await Promise.all(
         providers.map((p) =>
-          apiFetch('/api/waitlists', {
+          apiFetch('/api/waitlist', {
             method: 'POST',
             body: JSON.stringify({
               provider_id: p.id,
@@ -53,6 +53,11 @@ export function JoinWaitlistDialog({
               urgency: urgency || 'flexible',
               contact_method: contactMethod,
               contact_value: contactValue,
+              business_name: p.business_name,
+              address: p.address,
+              phone: p.phone,
+              latitude: p.latitude,
+              longitude: p.longitude,
             }),
           })
         )

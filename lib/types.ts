@@ -70,6 +70,13 @@ export interface ProviderResult {
   id: string;
   business_name: string;
   dist_meters: number;
+  rating?: number | null;
+  review_count?: number;
+  waitlist_count?: number;
+  address?: string | null;
+  phone?: string | null;
+  latitude?: number;
+  longitude?: number;
 }
 
 /** Maps DB waitlist status → UI status */

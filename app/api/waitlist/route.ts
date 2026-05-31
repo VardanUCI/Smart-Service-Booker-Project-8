@@ -4,13 +4,19 @@ import { z } from 'zod';
 
 const waitlistSchema = z
   .object({
-    provider_id: z.string().uuid('provider_id must be a valid UUID'),
+    provider_id: z.string().min(1, 'provider_id is required'),
     category: z.string().min(1, 'Category is required'),
     service: z.string().optional(),
     urgency: z.enum(['now', 'today', 'this-week', 'flexible']).default('flexible'),
     contact_method: z.enum(['sms', 'email'], { required_error: 'contact_method is required' }),
     contact_value: z.string().min(1, 'contact_value is required'),
     expires_at: z.string().datetime('expires_at must be a valid ISO timestamp'),
+    // Optional details for external provider on-demand registration
+    business_name: z.string().optional(),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.contact_method === 'sms' && !/^\+?[1-9]\d{7,14}$/.test(data.contact_value)) {
@@ -63,7 +69,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const { provider_id, category, service, urgency, contact_method, contact_value, expires_at } = result.data;
+  const {
+    provider_id,
+    category,
+    service,
+    urgency,
+    contact_method,
+    contact_value,
+    expires_at,
+    business_name,
+    address,
+    phone,
+    latitude,
+    longitude,
+  } = result.data;
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -71,26 +90,77 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: provider, error: providerLookupError } = await supabase
-    .from('providers')
-    .select('id')
-    .eq('id', provider_id)
-    .maybeSingle();
+  let providerIdToUse: string;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(provider_id);
 
-  if (providerLookupError) {
-    console.error('providers lookup error:', providerLookupError);
-    return NextResponse.json({ error: 'Failed to verify provider' }, { status: 500 });
-  }
+  if (isUuid) {
+    const { data: provider, error: providerLookupError } = await supabase
+      .from('providers')
+      .select('id')
+      .eq('id', provider_id)
+      .maybeSingle();
 
-  if (!provider) {
-    return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+    if (providerLookupError) {
+      console.error('providers lookup error:', providerLookupError);
+      return NextResponse.json({ error: 'Failed to verify provider' }, { status: 500 });
+    }
+
+    if (!provider) {
+      return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+    }
+    providerIdToUse = provider.id;
+  } else {
+    // It's a Google Place ID, look up if a placeholder already exists in the database
+    const { data: provider, error: providerLookupError } = await supabase
+      .from('providers')
+      .select('id')
+      .eq('google_place_id', provider_id)
+      .maybeSingle();
+
+    if (providerLookupError) {
+      console.error('providers lookup error:', providerLookupError);
+      return NextResponse.json({ error: 'Failed to verify provider' }, { status: 500 });
+    }
+
+    if (provider) {
+      providerIdToUse = provider.id;
+    } else {
+      // Auto-register external provider as a placeholder in the database
+      if (!business_name) {
+        return NextResponse.json({ error: 'business_name is required for external provider registration' }, { status: 400 });
+      }
+
+      const latVal = latitude ?? 0;
+      const lonVal = longitude ?? 0;
+      const newProviderId = crypto.randomUUID();
+
+      const { error: insertError } = await supabase
+        .from('providers')
+        .insert({
+          id: newProviderId,
+          business_name,
+          category,
+          location: `POINT(${lonVal} ${latVal})`,
+          address: address ?? null,
+          phone: phone ?? null,
+          google_place_id: provider_id,
+          is_available: true,
+        });
+
+      if (insertError) {
+        console.error('providers auto-insert error:', insertError);
+        return NextResponse.json({ error: 'Failed to auto-register external provider' }, { status: 500 });
+      }
+
+      providerIdToUse = newProviderId;
+    }
   }
 
   const { data: existing, error: waitlistLookupError } = await supabase
     .from('waitlists')
     .select('id')
     .eq('user_id', user.id)
-    .eq('provider_id', provider_id)
+    .eq('provider_id', providerIdToUse)
     .in('status', ['waiting', 'notified'])
     .maybeSingle();
 
@@ -107,7 +177,7 @@ export async function POST(request: NextRequest) {
     .from('waitlists')
     .insert({
       user_id: user.id,
-      provider_id,
+      provider_id: providerIdToUse,
       category,
       service: service ?? null,
       urgency,
