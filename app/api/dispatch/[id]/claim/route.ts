@@ -1,4 +1,5 @@
-// POST lets an authenticated provider atomically claim an open dispatch request.
+// POST lets an authenticated provider claim an open dispatch request via RPC.
+// All existence, expiry, and race-condition logic is handled inside the RPC.
 
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
@@ -25,68 +26,31 @@ export async function POST(
     return NextResponse.json({ error: authError }, { status });
   }
 
-  const { data: dispatch, error: fetchError } = await supabase
-    .from('dispatch_requests')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  const { data: rpcResult, error: rpcError } = await supabase
+    .rpc('claim_dispatch_request', {
+      p_dispatch_id: id,
+      p_provider_id: account.user.id,
+    });
 
-  if (fetchError) {
-    console.error('dispatch_requests fetch error:', fetchError);
-    return NextResponse.json({ error: 'Failed to fetch dispatch request' }, { status: 500 });
+  if (rpcError) {
+    console.error('dispatch claim error:', rpcError);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
-  if (!dispatch) {
+  const { status: claimStatus, data: claimedRequest } = rpcResult as {
+    status: number;
+    data: unknown;
+  };
+
+  if (claimStatus === 404) {
     return NextResponse.json({ error: 'Dispatch request not found' }, { status: 404 });
   }
-
-  if (dispatch.status === 'claimed') {
-    return NextResponse.json({ error: 'Dispatch request is no longer open' }, { status: 409 });
+  if (claimStatus === 410) {
+    return NextResponse.json({ error: 'This request has expired' }, { status: 410 });
+  }
+  if (claimStatus === 409) {
+    return NextResponse.json({ error: 'This request has already been claimed' }, { status: 409 });
   }
 
-  if (dispatch.status === 'expired' || new Date(dispatch.expires_at) <= new Date()) {
-    return NextResponse.json({ error: 'Dispatch request has expired' }, { status: 410 });
-  }
-
-  const now = new Date().toISOString();
-
-  const { data: updated, error: updateError } = await supabase
-    .from('dispatch_requests')
-    .update({ status: 'claimed', claimed_by: account.user.id, claimed_at: now })
-    .eq('id', id)
-    .eq('status', 'open')
-    .gt('expires_at', now)
-    .select();
-
-  if (updateError) {
-    console.error('dispatch_requests update error:', updateError);
-    return NextResponse.json({ error: 'Failed to claim dispatch request' }, { status: 500 });
-  }
-
-  if (!updated || updated.length === 0) {
-    // Distinguish expired vs claimed so the caller gets the right status code
-    const { data: current } = await supabase
-      .from('dispatch_requests')
-      .select('status, expires_at')
-      .eq('id', id)
-      .single();
-    if (!current || new Date(current.expires_at) <= new Date()) {
-      return NextResponse.json({ error: 'Dispatch request has expired' }, { status: 410 });
-    }
-    return NextResponse.json({ error: 'Request was just claimed by another provider' }, { status: 409 });
-  }
-
-  const { error: notifError } = await supabase.from('notifications').insert({
-    user_id: dispatch.customer_id,
-    type: 'confirmation',
-    title: 'Provider on the way',
-    message: `A provider has accepted your ${dispatch.category} request and is on the way.`,
-    action_url: `/dispatch/${id}`,
-  });
-
-  if (notifError) {
-    console.error('notification insert error:', notifError);
-  }
-
-  return NextResponse.json({ dispatch_request: updated[0] });
+  return NextResponse.json({ dispatch_request: claimedRequest }, { status: 200 });
 }

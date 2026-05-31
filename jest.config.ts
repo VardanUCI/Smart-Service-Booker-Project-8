@@ -9,6 +9,7 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   testMatch: ['**/__tests__/**/*.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/__tests__/e2e/'],
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
 };
 
