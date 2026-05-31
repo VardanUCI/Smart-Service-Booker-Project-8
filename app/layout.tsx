@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Smart Service Booker | Stop Calling Around, Get Matched Instantly',
-  description: 'Stop wasting time. Join multiple waitlists for local services - vets, doctors, restaurants, plumbers. Get notified the moment a spot opens.',
+  title: 'Bizskip | Stop Calling Around, Get Matched Instantly',
+  description: 'Bizskip helps you join multiple waitlists for local services - vets, doctors, restaurants, plumbers. Get notified the moment a spot opens.',
   keywords: ['waitlist', 'booking', 'appointments', 'local services', 'healthcare', 'restaurants'],
 }
 

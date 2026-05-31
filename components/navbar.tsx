@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Building2, LogOut, Menu, Bell, Clock, User, Settings } from 'lucide-react';
+import { Building2, LogOut, Menu, Bell, User, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { BrandLogo } from '@/components/brand-logo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,10 +101,7 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, #4f46e5, #2563eb)' }}>
-              <Clock className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-semibold tracking-tight text-foreground">Smart Service Booker</span>
+            <BrandLogo textClassName="text-xl" />
           </Link>
 
           

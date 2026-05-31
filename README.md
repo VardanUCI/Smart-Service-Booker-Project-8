@@ -1,4 +1,4 @@
-# Smart Service Booker
+# Bizskip
 
 A web application that allows users to discover and book appointments with service providers.
 

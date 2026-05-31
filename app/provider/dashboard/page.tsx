@@ -59,32 +59,34 @@ export default function ProviderDashboard() {
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
+      <div className="py-8 md:py-12" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e3a5f 100%)' }}>
+        <div className="container mx-auto px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">Welcome back</h1>
+            <p style={{ color: 'rgba(255,255,255,0.65)' }}>Here&apos;s what&apos;s happening with your business today</p>
+          </div>
+          <div className="flex gap-3">
+            <Link href="/notifications">
+              <Button size="sm" className="relative bg-white/10 text-white border border-white/20 hover:bg-white/20">
+                <Bell className="h-4 w-4 mr-2" />
+                Notifications
+                {pendingRequests > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-red-500 text-white">
+                    {pendingRequests}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+            <Link href="/provider/availability">
+              <Button size="sm" className="gap-2 bg-white text-indigo-900 hover:bg-zinc-100">
+                <Plus className="h-4 w-4" /> Add Slot
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
       <main className="flex-1 py-6 md:py-8">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back</p>
-            </div>
-            <div className="flex gap-3">
-              <Link href="/notifications">
-                <Button variant="outline" size="sm" className="relative">
-                  <Bell className="h-4 w-4 mr-2" />
-                  Notifications
-                  {pendingRequests > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
-                      {pendingRequests}
-                    </Badge>
-                  )}
-                </Button>
-              </Link>
-              <Link href="/provider/availability">
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" /> Add Slot
-                </Button>
-              </Link>
-            </div>
-          </div>
 
           {error && (
             <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
@@ -150,9 +152,10 @@ export default function ProviderDashboard() {
                   {loading ? (
                     <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
                   ) : requests.length === 0 ? (
-                    <div className="rounded-lg border border-dashed p-6 text-center">
-                      <p className="font-medium text-foreground">No recent requests yet</p>
-                      <p className="text-sm text-muted-foreground mt-1">New incoming requests from customers will appear here.</p>
+                    <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 p-8 text-center">
+                      <Users className="h-10 w-10 text-indigo-300 mx-auto mb-3" />
+                      <p className="font-medium text-foreground">No requests yet</p>
+                      <p className="text-sm text-muted-foreground mt-1">When customers join your waitlist, their requests will show up here.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -192,11 +195,11 @@ export default function ProviderDashboard() {
                   <CardDescription>People looking for services near you</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-lg border border-dashed p-6 text-center">
-                    <p className="font-medium text-foreground">No nearby demand data yet</p>
-                    <p className="text-sm text-muted-foreground mt-1">Demand insights will appear here once data is available.</p>
+                  <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 p-6 text-center">
+                    <MapPin className="h-8 w-8 text-indigo-300 mx-auto mb-2" />
+                    <p className="font-medium text-foreground text-sm">No nearby demand data yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Demand insights will appear here as customers search near you.</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-4 text-center">Expand your reach by offering mobile services</p>
                 </CardContent>
               </Card>
 

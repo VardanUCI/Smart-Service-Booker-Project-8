@@ -1,11 +1,13 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
 export function CTASection() {
   return (
-    <section className="py-16 md:py-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #1e3a5f 100%)' }}>
-      
+    <section className="py-16 md:py-24 relative overflow-hidden">
+      <Image src="/cta-bg.jpg" alt="" fill className="object-cover object-center" quality={80} />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.94) 0%, rgba(30,27,75,0.91) 40%, rgba(30,58,95,0.90) 100%)' }} />
       <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, #6366f1, transparent)' }} />
       <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, #3b82f6, transparent)' }} />
 
@@ -55,9 +57,20 @@ export function CTASection() {
             </Button>
           </div>
 
-          <p className="text-sm mt-6" style={{ color: 'rgba(255,255,255,0.40)' }}>
-            No credit card required &nbsp;·&nbsp; Free for service seekers &nbsp;·&nbsp; Set up in 2 minutes
-          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-8 text-sm" style={{ color: 'rgba(255,255,255,0.50)' }}>
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" /><path d="M4.5 7 L6.5 9 L9.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              No credit card required
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" /><path d="M4.5 7 L6.5 9 L9.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Free for service seekers
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" /><path d="M4.5 7 L6.5 9 L9.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Set up in 2 minutes
+            </span>
+          </div>
         </div>
       </div>
     </section>

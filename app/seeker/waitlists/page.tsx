@@ -12,7 +12,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, CheckCircle, XCircle, Bell, Plus, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { Clock, CheckCircle, XCircle, Bell, Plus, Loader2, Search } from 'lucide-react';
+import { EmptyWaitlistIllustration } from '@/components/illustrations';
 import { apiFetch } from '@/lib/api';
 import type { WaitlistEntry } from '@/lib/types';
 import { mapWaitlistStatus } from '@/lib/types';
@@ -72,17 +74,21 @@ export default function WaitlistsPage() {
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
-      <main className="flex-1 py-8 md:py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-1">My Waitlists</h1>
-              <p className="text-muted-foreground">Track your position and get notified when a spot opens</p>
-            </div>
-            <Link href="/seeker/search">
-              <Button className="gap-2"><Plus className="h-4 w-4" /> Join More</Button>
-            </Link>
+      <div className="relative py-12 md:py-16 overflow-hidden">
+        <Image src="/waitlist-bg.jpg" alt="" fill className="object-cover object-center" quality={80} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.93) 0%, rgba(30,27,75,0.90) 50%, rgba(30,58,95,0.88) 100%)' }} />
+        <div className="container mx-auto px-4 relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">My Waitlists</h1>
+            <p style={{ color: 'rgba(255,255,255,0.65)' }}>Track your position and get notified when a spot opens</p>
           </div>
+          <Link href="/seeker/search">
+            <Button className="gap-2 bg-white text-indigo-900 hover:bg-zinc-100"><Plus className="h-4 w-4" /> Join More</Button>
+          </Link>
+        </div>
+      </div>
+      <main className="flex-1 py-8 md:py-10">
+        <div className="container mx-auto px-4">
 
           {error && <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>}
 
@@ -101,10 +107,14 @@ export default function WaitlistsPage() {
               <TabsContent value="active" className="space-y-4">
                 {active.length === 0 ? (
                   <Card><CardContent className="py-12 text-center">
-                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">No active waitlists</h3>
-                    <p className="text-muted-foreground mb-6">Search for services and join waitlists to see them here</p>
-                    <Link href="/seeker/search"><Button>Find Services</Button></Link>
+                    <div className="max-w-[180px] mx-auto mb-2">
+                      <EmptyWaitlistIllustration />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No active waitlists yet</h3>
+                    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                      Find a service you need and join their waitlist. We&apos;ll notify you the moment a spot opens up.
+                    </p>
+                    <Link href="/seeker/search"><Button className="gap-2"><Search className="h-4 w-4" /> Find Services</Button></Link>
                   </CardContent></Card>
                 ) : active.map((w) => (
                   <WaitlistCard key={w.id} waitlist={w} onCancel={() => handleCancelClick(w)} />
@@ -114,7 +124,8 @@ export default function WaitlistsPage() {
               <TabsContent value="past" className="space-y-4">
                 {past.length === 0 ? (
                   <Card><CardContent className="py-12 text-center">
-                    <p className="text-muted-foreground">No past waitlists</p>
+                    <Clock className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-muted-foreground">No past waitlists yet — your history will appear here</p>
                   </CardContent></Card>
                 ) : past.map((w) => (
                   <WaitlistCard key={w.id} waitlist={w} isPast />

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Clock } from 'lucide-react';
+import { BrandLogo } from '@/components/brand-logo';
 
 const quickLinks = [
   { href: '/seeker/search', label: 'Find Services' },
@@ -15,13 +15,7 @@ export function Footer() {
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
             <Link href="/" className="mb-3 flex items-center gap-2">
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-lg"
-                style={{ background: 'linear-gradient(135deg, #4f46e5, #2563eb)' }}
-              >
-                <Clock className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-lg font-semibold text-foreground">Smart Service Booker</span>
+              <BrandLogo markClassName="h-8 w-8" textClassName="text-lg" />
             </Link>
             <p className="max-w-[320px] text-sm text-muted-foreground">
               Stop wasting time. Get matched with local services instantly.
@@ -46,9 +40,11 @@ export function Footer() {
 
         <div className="mt-8 border-t border-border pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Smart Service Booker. All rights reserved.
+            &copy; {new Date().getFullYear()} Bizskip. All rights reserved.
           </p>
-          <span className="text-sm text-muted-foreground">Made for local businesses</span>
+          <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+            Made with care for local businesses
+          </span>
         </div>
       </div>
     </footer>
