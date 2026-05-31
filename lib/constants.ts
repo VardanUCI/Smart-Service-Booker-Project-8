@@ -38,6 +38,18 @@ export const categories = [
     icon: 'Book',
     description: 'Tutors, trainers, coaches',
   },
+  {
+    id: 'beauty-wellness',
+    name: 'Beauty & Wellness',
+    icon: 'Sparkles',
+    description: 'Salons, spas, wellness services',
+  },
+  {
+    id: 'professional-services',
+    name: 'Professional Services',
+    icon: 'Briefcase',
+    description: 'Consultants, legal, financial',
+  },
 ] as const;
 
 export const serviceTypes: Record<string, string[]> = {
@@ -46,6 +58,8 @@ export const serviceTypes: Record<string, string[]> = {
   'food-dining': ['Restaurant table', 'Cafe seating', 'Catering', 'Private dining'],
   'home-services': ['Plumbing', 'Electrical', 'Cleaning', 'Handyman'],
   education: ['Tutoring', 'Coaching', 'Music lesson', 'Test prep'],
+  'beauty-wellness': ['Salons', 'Spas', 'Nail studios'],
+  'professional-services': ['Lawyers', 'Accountants', 'Consultants'],
 };
 
 export const urgencyLevels = [
