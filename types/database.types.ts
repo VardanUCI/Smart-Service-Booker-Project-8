@@ -1,6 +1,8 @@
 // @ts-nocheck
 // TypeScript types for every Supabase table and RPC function — import Database into createClient<Database>() for type-safe queries.
 
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
+
 export type Database = {
   public: {
     Tables: {
@@ -309,6 +311,13 @@ export type Database = {
           status: string
           created_at: string
         }[]
+      }
+      claim_dispatch_request: {
+        Args: {
+          p_dispatch_id: string
+          p_provider_id: string
+        }
+        Returns: Json
       }
     }
   }

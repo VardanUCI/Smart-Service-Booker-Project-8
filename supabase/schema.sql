@@ -66,6 +66,24 @@ CREATE POLICY "dispatch_customer_insert" ON public.dispatch_requests
 CREATE POLICY "dispatch_customer_update" ON public.dispatch_requests
   FOR UPDATE USING (auth.uid() = customer_id);
 
+-- Providers can claim an open request that matches their category and location radius
+CREATE POLICY "dispatch_provider_claim" ON public.dispatch_requests
+  FOR UPDATE
+  USING (
+    status = 'open'
+    AND expires_at > NOW()
+    AND EXISTS (
+      SELECT 1 FROM public.providers p
+      WHERE p.id = auth.uid()
+        AND p.category = dispatch_requests.category
+        AND p.is_available = TRUE
+    )
+  )
+  WITH CHECK (
+    claimed_by = auth.uid()
+    AND status = 'claimed'
+  );
+
 CREATE POLICY "dispatch_provider_read" ON public.dispatch_requests
   FOR SELECT USING (
     status = 'open'
