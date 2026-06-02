@@ -3,14 +3,48 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getBusinessAccount } from '@/lib/auth/server';
 import { DEV_ONBOARDING_COOKIE, getDevAccountFromRequest } from '@/lib/auth/dev-auth';
+import type { TablesUpdate } from '@/types/database.types';
 
-const patchSchema = z.object({
-  is_available: z.boolean().optional(),
-  available_until: z.string().datetime().nullable().optional(),
-  business_name: z.string().min(1).optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-});
+export async function GET() {
+  const supabase = await createClient();
+
+  const { account, error: authError, status } = await getBusinessAccount(supabase);
+  if (!account || authError) {
+    return NextResponse.json({ error: authError }, { status });
+  }
+
+  const { data: provider, error: fetchError } = await supabase
+    .from('providers')
+    .select('id, business_name, category, address, phone, is_available, available_until')
+    .eq('id', account.user.id)
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error('providers fetch error:', fetchError);
+    return NextResponse.json({ error: 'Failed to fetch provider profile' }, { status: 500 });
+  }
+
+  if (!provider) {
+    return NextResponse.json({ error: 'Provider profile not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ provider });
+}
+
+const patchSchema = z
+  .object({
+    is_available: z.boolean().optional(),
+    available_until: z.string().datetime().nullable().optional(),
+    business_name: z.string().min(1).optional(),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+    latitude: z.number({ invalid_type_error: 'latitude must be a number' }).optional(),
+    longitude: z.number({ invalid_type_error: 'longitude must be a number' }).optional(),
+  })
+  .refine(
+    (data) => (data.latitude === undefined) === (data.longitude === undefined),
+    { message: 'latitude and longitude must both be provided together' },
+  );
 
 export async function PATCH(request: NextRequest) {
   let body: unknown;
@@ -32,9 +66,15 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: authError }, { status });
   }
 
+  const { latitude, longitude, ...fields } = result.data;
+  const updatePayload: TablesUpdate<'providers'> = { ...fields };
+  if (latitude !== undefined && longitude !== undefined) {
+    updatePayload.location = `SRID=4326;POINT(${longitude} ${latitude})`;
+  }
+
   const { data: provider, error: updateError } = await supabase
     .from('providers')
-    .update(result.data)
+    .update(updatePayload)
     .eq('id', account.user.id)
     .select()
     .single();
