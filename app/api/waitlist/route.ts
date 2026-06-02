@@ -195,5 +195,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to join waitlist' }, { status: 500 });
   }
 
+  // Notify the provider in-app so they can see the new request
+  const { error: notifError } = await supabase.from('notifications').insert({
+    user_id: providerIdToUse,
+    type: 'request',
+    title: 'New Waitlist Request',
+    message: `A customer joined your waitlist for ${category}`,
+    action_url: '/provider/requests',
+  });
+  if (notifError) console.error('provider notification insert error:', notifError);
+
   return NextResponse.json({ waitlist }, { status: 201 });
 }

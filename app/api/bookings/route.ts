@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getBusinessAccount } from '@/lib/auth/server';
+import { sendSpotAvailableEmail } from '@/lib/email';
 
 const providerBookingSchema = z.object({
   waitlist_id: z.string().uuid('Invalid waitlist ID'),
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     const { data: waitlist, error: waitlistError } = await supabase
       .from('waitlists')
-      .select('user_id, provider_id, status')
+      .select('user_id, provider_id, status, contact_method, contact_value, category, service')
       .eq('id', waitlist_id)
       .single();
 
@@ -82,6 +83,28 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       console.error('bookings insert error:', insertError);
       return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 });
+    }
+
+    // Mark waitlist as booked
+    const { error: wlUpdateError } = await supabase
+      .from('waitlists')
+      .update({ status: 'booked' })
+      .eq('id', waitlist_id);
+    if (wlUpdateError) console.error('waitlist status update error:', wlUpdateError);
+
+    // Send confirmation email to the customer if they chose email contact
+    if (waitlist.contact_method === 'email' && waitlist.contact_value) {
+      const { data: provider } = await supabase
+        .from('providers')
+        .select('business_name')
+        .eq('id', account.user.id)
+        .maybeSingle();
+      const businessName = provider?.business_name ?? 'Your service provider';
+      sendSpotAvailableEmail(
+        waitlist.contact_value,
+        businessName,
+        waitlist.service ?? waitlist.category,
+      ).catch((err) => console.error('booking confirmation email error:', err));
     }
 
     return NextResponse.json({ booking }, { status: 201 });

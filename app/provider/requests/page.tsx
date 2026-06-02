@@ -68,11 +68,13 @@ export default function RequestsPage() {
           body: JSON.stringify({ waitlist_id: selectedRequest.id }),
         });
         setRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
+      } else if (actionType === 'notify') {
+        await apiFetch(`/api/waitlist/${selectedRequest.id}/notify`, { method: 'PATCH' });
+        setRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
       } else if (actionType === 'dismiss') {
         await apiFetch(`/api/waitlist/${selectedRequest.id}`, { method: 'DELETE' });
         setRequests((prev) => prev.filter((r) => r.id !== selectedRequest.id));
       }
-      // 'notify' has no API endpoint yet — just close
       setActionDialogOpen(false);
       setSelectedRequest(null);
     } catch (e) {

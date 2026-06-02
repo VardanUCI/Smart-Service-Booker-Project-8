@@ -53,6 +53,7 @@ export function JoinWaitlistDialog({
               urgency: urgency || 'flexible',
               contact_method: contactMethod,
               contact_value: contactValue,
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
               business_name: p.business_name,
               address: p.address,
               phone: p.phone,
