@@ -64,12 +64,19 @@ export default function AccountPage() {
 
         return payload.user;
       })
-      .then((user) => {
+      .then(async (user) => {
         if (!user) return;
         if (!isMounted) return;
         setAccount(user);
         setDisplayName(user.name);
-        setBusinessLocation('');
+
+        if (user.role === 'business') {
+          const provRes = await fetch('/api/providers', { cache: 'no-store' });
+          if (provRes.ok) {
+            const { provider } = (await provRes.json()) as { provider?: { address?: string | null } };
+            if (isMounted) setBusinessLocation(provider?.address ?? '');
+          }
+        }
       })
       .catch((error) => {
         if (!isMounted) return;
@@ -125,13 +132,24 @@ export default function AccountPage() {
     setIsSavingProfile(true);
 
     try {
-      const { user } = await apiFetch<{ user: AccountProfile }>('/api/account', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          name: displayName,
-          avatarUrl: account?.avatarUrl ?? null,
+      const calls: Promise<unknown>[] = [
+        apiFetch<{ user: AccountProfile }>('/api/account', {
+          method: 'PATCH',
+          body: JSON.stringify({ name: displayName }),
         }),
-      });
+      ];
+
+      if (account?.role === 'business' && businessLocation.trim()) {
+        calls.push(
+          apiFetch('/api/providers', {
+            method: 'PATCH',
+            body: JSON.stringify({ address: businessLocation }),
+          }),
+        );
+      }
+
+      const [profileResult] = await Promise.all(calls);
+      const { user } = profileResult as { user: AccountProfile };
       setAccount(user);
       setDisplayName(user.name);
       setProfileMessage('Profile saved.');
