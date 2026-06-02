@@ -135,6 +135,7 @@ export function ProviderDetailSheet({ provider, isOpen, onClose, onJoinWaitlist 
                         key={slot.id}
                         className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-background hover:bg-primary/5 transition-colors"
                       >
+                        <div>
                           <p className="font-medium text-foreground text-sm">
                             {new Date(slot.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                           </p>
