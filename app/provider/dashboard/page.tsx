@@ -8,9 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Users, Clock, TrendingUp, Plus, Bell, ArrowRight, MapPin, Zap, Loader2 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { Calendar, Users, Clock, TrendingUp, Plus, Bell, ArrowRight, MapPin, Zap, Loader2, AlertTriangle, CheckCircle, Timer } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
-import type { ProviderDashboardStats, ProviderRequest } from '@/lib/types';
+import type { ProviderDashboardStats, ProviderRequest, ProviderDispatchRequest } from '@/lib/types';
 
 const urgencyColors: Record<string, string> = {
   now: 'bg-red-100 text-red-700',
@@ -22,18 +25,29 @@ const urgencyColors: Record<string, string> = {
 export default function ProviderDashboard() {
   const [stats, setStats] = useState<ProviderDashboardStats | null>(null);
   const [requests, setRequests] = useState<ProviderRequest[]>([]);
+  const [dispatches, setDispatches] = useState<ProviderDispatchRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Dispatch claim state
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [claimDialogOpen, setClaimDialogOpen] = useState(false);
+  const [selectedDispatch, setSelectedDispatch] = useState<ProviderDispatchRequest | null>(null);
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [claimResult, setClaimResult] = useState<'success' | 'error' | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const [statsRes, reqRes] = await Promise.all([
+        const [statsRes, reqRes, dispatchRes] = await Promise.all([
           apiFetch<{ stats: ProviderDashboardStats }>('/api/providers/dashboard'),
           apiFetch<{ requests: ProviderRequest[] }>('/api/providers/requests'),
+          apiFetch<{ dispatch_requests: ProviderDispatchRequest[] }>('/api/dispatch/available').catch(() => ({ dispatch_requests: [] })),
         ]);
         setStats(statsRes.stats);
         setRequests(reqRes.requests);
+        setDispatches(dispatchRes.dispatch_requests);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load dashboard');
       } finally {
@@ -42,6 +56,29 @@ export default function ProviderDashboard() {
     }
     void load();
   }, []);
+
+  const handleClaimDispatch = (dispatch: ProviderDispatchRequest) => {
+    setSelectedDispatch(dispatch);
+    setClaimResult(null);
+    setClaimError(null);
+    setClaimDialogOpen(true);
+  };
+
+  const confirmClaim = async () => {
+    if (!selectedDispatch) return;
+    setClaimLoading(true);
+    setClaimError(null);
+    try {
+      await apiFetch(`/api/dispatch/${selectedDispatch.id}/claim`, { method: 'POST' });
+      setClaimResult('success');
+      setDispatches((prev) => prev.filter((d) => d.id !== selectedDispatch.id));
+    } catch (e) {
+      setClaimError(e instanceof Error ? e.message : 'Failed to claim');
+      setClaimResult('error');
+    } finally {
+      setClaimLoading(false);
+    }
+  };
 
   const openSlots = stats?.openSlots ?? 0;
   const pendingRequests = stats?.pendingRequests ?? 0;
@@ -187,19 +224,30 @@ export default function ProviderDashboard() {
             </div>
 
             <div className="space-y-6">
+              {/* Model C: Nearby Urgent Jobs */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" /> Nearby Demand
+                    <AlertTriangle className="h-5 w-5 text-red-500" /> Urgent Jobs Nearby
                   </CardTitle>
-                  <CardDescription>People looking for services near you</CardDescription>
+                  <CardDescription>Customers who need help right now</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 p-6 text-center">
-                    <MapPin className="h-8 w-8 text-indigo-300 mx-auto mb-2" />
-                    <p className="font-medium text-foreground text-sm">No nearby demand data yet</p>
-                    <p className="text-sm text-muted-foreground mt-1">Demand insights will appear here as customers search near you.</p>
-                  </div>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                  ) : dispatches.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/30 p-6 text-center">
+                      <MapPin className="h-8 w-8 text-indigo-300 mx-auto mb-2" />
+                      <p className="font-medium text-foreground text-sm">No urgent jobs nearby</p>
+                      <p className="text-sm text-muted-foreground mt-1">When customers post urgent requests near you, they&apos;ll appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {dispatches.slice(0, 5).map((dispatch) => (
+                        <DispatchJobCard key={dispatch.id} dispatch={dispatch} onClaim={() => handleClaimDispatch(dispatch)} />
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -230,6 +278,107 @@ export default function ProviderDashboard() {
         </div>
       </main>
       <Footer />
+
+      {/* Dispatch Claim Dialog */}
+      <Dialog open={claimDialogOpen} onOpenChange={(open) => { setClaimDialogOpen(open); if (!open) { setClaimResult(null); setClaimError(null); } }}>
+        <DialogContent>
+          {claimResult === 'success' ? (
+            <div className="text-center py-6">
+              <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              <DialogHeader>
+                <DialogTitle className="text-center">Job Accepted!</DialogTitle>
+                <DialogDescription className="text-center">
+                  You&apos;ve claimed this job. The customer has been notified and is expecting you.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="mt-6">
+                <Button onClick={() => { setClaimDialogOpen(false); setClaimResult(null); }}>Got it</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Accept This Job?</DialogTitle>
+                <DialogDescription>Claim this urgent request before another provider does.</DialogDescription>
+              </DialogHeader>
+              {selectedDispatch && (
+                <div className="py-4">
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-foreground capitalize">{selectedDispatch.category.replace(/-/g, ' ')}</span>
+                      <Badge className="bg-red-100 text-red-700">Urgent</Badge>
+                    </div>
+                    {selectedDispatch.description && (
+                      <p className="text-sm text-muted-foreground">{selectedDispatch.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-foreground">{selectedDispatch.address}</span>
+                    </div>
+                    {selectedDispatch.dist_meters !== undefined && (
+                      <p className="text-xs text-muted-foreground">
+                        {(selectedDispatch.dist_meters / 1609.34).toFixed(1)} mi away
+                      </p>
+                    )}
+                  </div>
+                  {claimError && <p className="text-sm text-destructive mt-3">{claimError}</p>}
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setClaimDialogOpen(false)} disabled={claimLoading}>Cancel</Button>
+                <Button className="bg-red-600 hover:bg-red-700 text-white gap-1" onClick={() => void confirmClaim()} disabled={claimLoading}>
+                  {claimLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle className="h-4 w-4" /> Accept Job</>}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ── Dispatch Job Card for Provider ── */
+function DispatchJobCard({ dispatch, onClaim }: { dispatch: ProviderDispatchRequest; onClaim: () => void }) {
+  const [remaining, setRemaining] = useState(() => Math.max(0, new Date(dispatch.expires_at).getTime() - Date.now()));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRemaining(Math.max(0, new Date(dispatch.expires_at).getTime() - Date.now()));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dispatch.expires_at]);
+
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  const isExpired = remaining <= 0;
+
+  if (isExpired) return null;
+
+  return (
+    <div className="p-3 rounded-lg border border-red-200 bg-red-50/50">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div>
+          <p className="font-semibold text-foreground capitalize text-sm">{dispatch.category.replace(/-/g, ' ')}</p>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+            <MapPin className="h-3 w-3" />
+            <span className="truncate max-w-[160px]">{dispatch.address}</span>
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <span className="font-mono text-sm font-bold text-red-600">
+            {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+          </span>
+        </div>
+      </div>
+      {dispatch.description && (
+        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{dispatch.description}</p>
+      )}
+      <Button size="sm" className="w-full bg-red-600 hover:bg-red-700 text-white gap-1" onClick={onClaim}>
+        <Zap className="h-3.5 w-3.5" /> Accept Job
+      </Button>
     </div>
   );
 }
