@@ -39,11 +39,38 @@ export function JoinWaitlistDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
+  setIsSubmitting(true);
+
+  const contactValue = contactMethod === 'sms' ? phone : email;
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+
+  try {
+    for (const provider of providers) {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider_id: provider.id,
+          category: provider.category,    // ← need to check if Provider type has this
+          contact_method: contactMethod,
+          contact_value: contactValue,
+          expires_at: expiresAt,
+        }),
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json();
+        console.error('Waitlist join failed:', error);
+      }
+    }
+
     setStep('success');
-  };
+  } catch (err) {
+    console.error('Waitlist submit error:', err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleClose = () => {
     setStep('review');
