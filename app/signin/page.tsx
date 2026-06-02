@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Clock, LogIn, Building2, User } from 'lucide-react';
+import { LogIn, Building2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createClient } from '@/utils/supabase/client';
 import { PasswordInput } from '@/components/password-input';
+import { BrandLogo } from '@/components/brand-logo';
 
 function getSafeRedirect(nextValue: string | null) {
   if (!nextValue || !nextValue.startsWith('/')) return '/seeker/search';
@@ -83,13 +84,7 @@ function SignInContent() {
     >
       <div className="mx-auto w-full max-w-md">
         <Link href="/" className="mb-8 inline-flex items-center gap-2 text-white/90 hover:text-white">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg"
-            style={{ background: 'linear-gradient(135deg, #4f46e5, #2563eb)' }}
-          >
-            <Clock className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-semibold">Smart Service Booker</span>
+          <BrandLogo textClassName="text-white" />
         </Link>
 
         <Card className="border-white/20 bg-white/95 backdrop-blur">

@@ -24,46 +24,9 @@
 //     'beauty-wellness'  →  beauty_salon, hair_care, spa
 //     'professional'     →  lawyer, accounting, insurance_agency
 //
-// -----------------------------------------------------------------------------
-// SETUP INSTRUCTIONS (do these once before using this module):
-// -----------------------------------------------------------------------------
-//
-//   1. CREATE A GOOGLE CLOUD PROJECT
-//      Go to https://console.cloud.google.com/ and create a new project
-//      (or use an existing one).
-//
-//   2. ENABLE THE PLACES API (NEW)
-//      In the Cloud Console, go to APIs & Services → Library.
-//      Search for "Places API (New)" and click Enable.
-//      Note: This is the NEW version of the Places API — it uses a simpler
-//      REST interface and does NOT require the older `@googlemaps/google-maps-services-js` SDK.
-//
-//   3. CREATE AN API KEY
-//      Go to APIs & Services → Credentials → Create Credentials → API key.
-//      Restrict it to the Places API (New) for security.
-//      For production, also add HTTP referrer or IP restrictions.
-//
-//   4. ADD ENVIRONMENT VARIABLE
-//      Add this line to your `.env.local` file in the project root:
-//
-//        GOOGLE_MAPS_API_KEY=AIzaSy...your-key-here...
-//
-//      Next.js loads `.env.local` automatically on the server side.
-//      This key is NEVER exposed to the browser — it stays server-only.
-//
-//   5. NO EXTRA PACKAGES NEEDED
-//      This module uses the built-in `fetch` API to call Google's REST
-//      endpoints directly. No npm install required.
-//
-//   6. BILLING
-//      The Places API (New) requires a billing account on Google Cloud.
-//      New accounts get $300 in free credits. The Nearby Search endpoint
-//      costs $32 per 1,000 requests (as of 2024). For development and
-//      testing, the free tier is more than enough.
-//
 // =============================================================================
 
-import type { CategoryId } from '@/lib/mock-data';
+import type { CategoryId } from '@/lib/constants';
 
 
 // -----------------------------------------------------------------------------
@@ -99,8 +62,7 @@ if (!apiKey) {
   console.warn(
     '[Google Maps] Missing GOOGLE_MAPS_API_KEY environment variable.\n' +
     'Nearby business search is disabled.\n' +
-    'To enable it, add GOOGLE_MAPS_API_KEY to your .env.local file.\n' +
-    'See integration/google-maps.ts for full setup instructions.'
+    'To enable it, configure the GOOGLE_MAPS_API_KEY environment variable.'
   );
 }
 
@@ -575,6 +537,219 @@ interface GooglePlaceResult {
     widthPx?: number;
     heightPx?: number;
   }>;
+}
+
+
+// =============================================================================
+// GEOCODING — geocodeLocation
+// =============================================================================
+//
+// Converts a human-readable location string (ZIP code, city name, or a
+// combination like "Irvine, CA 92614") into GPS coordinates.
+//
+// Uses the Google Geocoding API (same GOOGLE_MAPS_API_KEY — no extra setup).
+// Geocoding API reference:
+//   https://developers.google.com/maps/documentation/geocoding/requests-geocoding
+//
+// PARAMETERS:
+//   location — Any free-form location string:
+//              "92614"                  ← ZIP code only
+//              "Irvine, CA"             ← city + state
+//              "Irvine, CA 92614"       ← city + state + ZIP
+//              "123 Main St, Irvine CA" ← full address
+//
+// RETURNS:
+//   { success: true,  lat, lng }  on success
+//   { success: false, error }     if the string cannot be geocoded
+//
+// USAGE:
+//   // In a Next.js API route or server component:
+//   const result = await geocodeLocation('Irvine, CA 92614');
+//   if (result.success) {
+//     const { lat, lng } = result;   // e.g. 33.6846, -117.8265
+//   }
+// =============================================================================
+
+export interface GeocodeSuccess {
+  success: true;
+  lat: number;
+  lng: number;
+  /** Formatted address returned by Google (useful for display / confirmation). */
+  formattedAddress: string;
+}
+
+export interface GeocodeFailure {
+  success: false;
+  error: string;
+}
+
+export type GeocodeResult = GeocodeSuccess | GeocodeFailure;
+
+/** Internal shape of one result object from the Geocoding API response. */
+interface GoogleGeocodeResult {
+  formatted_address: string;
+  geometry: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
+}
+
+/**
+ * Converts a location string (ZIP code, city, or address) into lat/lng
+ * coordinates using the Google Geocoding API.
+ *
+ * Server-side only — never call this from client components.
+ */
+export async function geocodeLocation(location: string): Promise<GeocodeResult> {
+  if (!apiKey) {
+    const errorMsg =
+      '[Google Maps] API key not configured — missing GOOGLE_MAPS_API_KEY env variable.';
+    console.error(errorMsg);
+    return { success: false, error: errorMsg };
+  }
+
+  const trimmed = location.trim();
+  if (!trimmed) {
+    return { success: false, error: 'Location string is empty.' };
+  }
+
+  const url =
+    `https://maps.googleapis.com/maps/api/geocode/json` +
+    `?address=${encodeURIComponent(trimmed)}` +
+    `&key=${apiKey}`;
+
+  try {
+    console.log(`[Google Maps] Geocoding: "${trimmed}"`);
+
+    const response = await fetch(url, { cache: 'no-store' });
+
+    if (!response.ok) {
+      const body = await response.text();
+      const errorMsg = `[Google Maps] Geocoding API HTTP error ${response.status}: ${body}`;
+      console.error(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    const data: {
+      status: string;
+      results: GoogleGeocodeResult[];
+      error_message?: string;
+    } = await response.json();
+
+    // Possible statuses: OK, ZERO_RESULTS, OVER_DAILY_LIMIT, INVALID_REQUEST, etc.
+    if (data.status !== 'OK') {
+      const errorMsg =
+        `[Google Maps] Geocoding returned status "${data.status}"` +
+        (data.error_message ? `: ${data.error_message}` : '.');
+      console.warn(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    if (!data.results.length) {
+      return { success: false, error: `No results found for "${trimmed}".` };
+    }
+
+    const { lat, lng } = data.results[0].geometry.location;
+    const formattedAddress = data.results[0].formatted_address;
+
+    console.log(
+      `[Google Maps] Geocoded "${trimmed}" → (${lat}, ${lng}) — ${formattedAddress}`
+    );
+
+    return { success: true, lat, lng, formattedAddress };
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const errorMsg = `[Google Maps] Unexpected geocoding error: ${message}`;
+    console.error(errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+
+export interface ReverseGeocodeSuccess {
+  success: true;
+  zipOrCity: string;
+  formattedAddress: string;
+}
+
+export interface ReverseGeocodeFailure {
+  success: false;
+  error: string;
+}
+
+export type ReverseGeocodeResult = ReverseGeocodeSuccess | ReverseGeocodeFailure;
+
+/**
+ * Converts lat/lng coordinates to a ZIP code or city name using the Google Geocoding API.
+ * Prefers postal_code; falls back to locality (city) + short state abbreviation.
+ * Server-side only.
+ */
+export async function reverseGeocodeLocation(lat: number, lng: number): Promise<ReverseGeocodeResult> {
+  if (!apiKey) {
+    return { success: false, error: '[Google Maps] API key not configured.' };
+  }
+
+  const url =
+    `https://maps.googleapis.com/maps/api/geocode/json` +
+    `?latlng=${lat},${lng}` +
+    `&key=${apiKey}`;
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      return { success: false, error: `[Google Maps] Reverse geocode HTTP error ${response.status}` };
+    }
+
+    const data: {
+      status: string;
+      results: Array<{
+        formatted_address: string;
+        types: string[];
+        address_components: Array<{ long_name: string; short_name: string; types: string[] }>;
+      }>;
+    } = await response.json();
+
+    if (data.status !== 'OK' || !data.results.length) {
+      return { success: false, error: `[Google Maps] Reverse geocode status: ${data.status}` };
+    }
+
+    // Google returns results ordered most-specific → least-specific. A result
+    // specifically typed as postal_code may appear at a later index even when
+    // results[0] (a street address) also contains it in its components. Scan
+    // all results for a postal_code-typed entry first for the most reliable ZIP.
+    const postalResult = data.results.find((r) => r.types?.includes('postal_code'));
+    if (postalResult) {
+      const postalComponent = postalResult.address_components.find((c) => c.types.includes('postal_code'));
+      if (postalComponent) {
+        return { success: true, zipOrCity: postalComponent.long_name, formattedAddress: postalResult.formatted_address };
+      }
+    }
+
+    // Fall back: check address_components of the most-specific result.
+    const components = data.results[0].address_components;
+    const postal = components.find((c) => c.types.includes('postal_code'));
+    if (postal) {
+      return { success: true, zipOrCity: postal.long_name, formattedAddress: data.results[0].formatted_address };
+    }
+
+    const city = components.find((c) => c.types.includes('locality'));
+    const state = components.find((c) => c.types.includes('administrative_area_level_1'));
+    if (city) {
+      return {
+        success: true,
+        zipOrCity: `${city.long_name}${state ? `, ${state.short_name}` : ''}`,
+        formattedAddress: data.results[0].formatted_address,
+      };
+    }
+
+    return { success: false, error: '[Google Maps] Could not extract ZIP or city from coordinates.' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: `[Google Maps] Reverse geocode error: ${message}` };
+  }
 }
 
 

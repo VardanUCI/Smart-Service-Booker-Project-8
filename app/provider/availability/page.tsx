@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
@@ -10,63 +10,100 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Clock, Users, Zap, Trash2, Edit2 } from 'lucide-react';
-import { mockTimeSlots, TimeSlot } from '@/lib/mock-data';
+import { ArrowLeft, Plus, Clock, Users, Zap, Trash2, Loader2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+import type { AvailabilitySlot } from '@/lib/types';
+import { formatSlotTime, getTodayTomorrow } from '@/lib/types';
 
 export default function AvailabilityPage() {
-  const [slots, setSlots] = useState<TimeSlot[]>(mockTimeSlots);
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isAvailableNow, setIsAvailableNow] = useState(false);
+  const [togglingAvail, setTogglingAvail] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newSlot, setNewSlot] = useState({
-    date: 'Today',
-    startTime: '9:00 AM',
-    endTime: '10:00 AM',
-    capacity: '3',
-  });
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addLoading, setAddLoading] = useState(false);
+  const { today, tomorrow } = getTodayTomorrow();
+  const [newSlot, setNewSlot] = useState({ date: today, start_time: '09:00', end_time: '10:00', capacity: 1 });
 
-  const handleAddSlot = () => {
-    const slot: TimeSlot = {
-      id: `ts-${Date.now()}`,
-      date: newSlot.date,
-      startTime: newSlot.startTime,
-      endTime: newSlot.endTime,
-      capacity: parseInt(newSlot.capacity),
-      booked: 0,
-      isAvailableNow: false,
-    };
-    setSlots([...slots, slot]);
-    setIsAddDialogOpen(false);
-    setNewSlot({ date: 'Today', startTime: '9:00 AM', endTime: '10:00 AM', capacity: '3' });
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function load() {
+    try {
+      const data = await apiFetch<{ slots: AvailabilitySlot[] }>('/api/availability');
+      setSlots(data.slots);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load slots');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleAddSlot = async () => {
+    setAddLoading(true);
+    setAddError(null);
+    try {
+      const data = await apiFetch<{ slot: AvailabilitySlot }>('/api/availability', {
+        method: 'POST',
+        body: JSON.stringify({
+          date: newSlot.date,
+          start_time: newSlot.start_time,
+          end_time: newSlot.end_time,
+          capacity: newSlot.capacity,
+        }),
+      });
+      setSlots((prev) => [...prev, data.slot].sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time)));
+      setIsAddDialogOpen(false);
+      setNewSlot({ date: today, start_time: '09:00', end_time: '10:00', capacity: 1 });
+    } catch (e) {
+      setAddError(e instanceof Error ? e.message : 'Failed to add slot');
+    } finally {
+      setAddLoading(false);
+    }
   };
 
-  const handleDeleteSlot = (id: string) => {
-    setSlots(slots.filter((s) => s.id !== id));
+  const handleDeleteSlot = async (id: string) => {
+    try {
+      await apiFetch(`/api/availability/${id}`, { method: 'DELETE' });
+      setSlots((prev) => prev.filter((s) => s.id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete slot');
+    }
   };
 
-  const todaySlots = slots.filter((s) => s.date === 'Today');
-  const tomorrowSlots = slots.filter((s) => s.date === 'Tomorrow');
+  const handleToggleAvailableNow = async (checked: boolean) => {
+    setTogglingAvail(true);
+    try {
+      await apiFetch('/api/providers', {
+        method: 'PATCH',
+        body: JSON.stringify({ is_available: checked, available_until: null }),
+      });
+      setIsAvailableNow(checked);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update availability');
+    } finally {
+      setTogglingAvail(false);
+    }
+  };
+
+  const todaySlots = slots.filter((s) => s.date === today);
+  const tomorrowSlots = slots.filter((s) => s.date === tomorrow);
+  const upcomingSlots = slots.filter((s) => s.date > tomorrow);
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
       <main className="flex-1 py-6 md:py-8">
         <div className="container mx-auto px-4">
-          
           <div className="flex items-center gap-4 mb-6">
             <Link href="/provider/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+              <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
             </Link>
             <div className="flex-1">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">Availability</h1>
@@ -74,10 +111,7 @@ export default function AvailabilityPage() {
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Slot
-                </Button>
+                <Button className="gap-2"><Plus className="h-4 w-4" /> Add Slot</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -86,66 +120,41 @@ export default function AvailabilityPage() {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label>Date</Label>
-                    <Select value={newSlot.date} onValueChange={(v) => setNewSlot({ ...newSlot, date: v })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Today">Today</SelectItem>
-                        <SelectItem value="Tomorrow">Tomorrow</SelectItem>
-                        <SelectItem value="This Week">This Week</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="slot-date">Date</Label>
+                    <Input id="slot-date" type="date" min={today} value={newSlot.date}
+                      onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Start Time</Label>
-                      <Select value={newSlot.startTime} onValueChange={(v) => setNewSlot({ ...newSlot, startTime: v })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'].map((t) => (
-                            <SelectItem key={t} value={t}>{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="slot-start">Start Time</Label>
+                      <Input id="slot-start" type="time" value={newSlot.start_time}
+                        onChange={(e) => setNewSlot({ ...newSlot, start_time: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>End Time</Label>
-                      <Select value={newSlot.endTime} onValueChange={(v) => setNewSlot({ ...newSlot, endTime: v })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'].map((t) => (
-                            <SelectItem key={t} value={t}>{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="slot-end">End Time</Label>
+                      <Input id="slot-end" type="time" value={newSlot.end_time}
+                        onChange={(e) => setNewSlot({ ...newSlot, end_time: e.target.value })} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Capacity (max appointments)</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={newSlot.capacity}
-                      onChange={(e) => setNewSlot({ ...newSlot, capacity: e.target.value })}
-                    />
+                    <Label htmlFor="slot-cap">Capacity (max appointments)</Label>
+                    <Input id="slot-cap" type="number" min={1} max={50} value={newSlot.capacity}
+                      onChange={(e) => setNewSlot({ ...newSlot, capacity: parseInt(e.target.value) || 1 })} />
                   </div>
+                  {addError && <p className="text-sm text-destructive">{addError}</p>}
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAddSlot}>Add Slot</Button>
+                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={addLoading}>Cancel</Button>
+                  <Button onClick={() => void handleAddSlot()} disabled={addLoading}>
+                    {addLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Slot'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
 
-          
+          {error && <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>}
+
           <Card className="mb-6">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
@@ -158,79 +167,48 @@ export default function AvailabilityPage() {
                     <p className="text-sm text-muted-foreground">Accept walk-ins and urgent requests immediately</p>
                   </div>
                 </div>
-                <Switch
-                  id="available-now"
-                  checked={isAvailableNow}
-                  onCheckedChange={setIsAvailableNow}
-                  className="scale-125"
-                />
+                <Switch id="available-now" checked={isAvailableNow} disabled={togglingAvail}
+                  onCheckedChange={(v) => void handleToggleAvailableNow(v)} className="scale-125" />
               </div>
               {isAvailableNow && (
                 <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
-                  You&apos;re now visible to people looking for immediate availability. You&apos;ll receive notifications for urgent requests.
+                  You&apos;re now visible to people looking for immediate availability.
                 </div>
               )}
             </CardContent>
           </Card>
 
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Today
-                </CardTitle>
-                <CardDescription>{todaySlots.length} time slots</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {todaySlots.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                    <p>No slots for today</p>
-                    <Button variant="outline" className="mt-4" onClick={() => setIsAddDialogOpen(true)}>
-                      Add Slot
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {todaySlots.map((slot) => (
-                      <SlotCard key={slot.id} slot={slot} onDelete={handleDeleteSlot} />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Tomorrow
-                </CardTitle>
-                <CardDescription>{tomorrowSlots.length} time slots</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tomorrowSlots.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                    <p>No slots for tomorrow</p>
-                    <Button variant="outline" className="mt-4" onClick={() => setIsAddDialogOpen(true)}>
-                      Add Slot
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {tomorrowSlots.map((slot) => (
-                      <SlotCard key={slot.id} slot={slot} onDelete={handleDeleteSlot} />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <div className="space-y-6">
+              {[{ label: 'Today', items: todaySlots }, { label: 'Tomorrow', items: tomorrowSlots }, { label: 'Upcoming', items: upcomingSlots }].map(({ label, items }) => (
+                <Card key={label}>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" /> {label}
+                    </CardTitle>
+                    <CardDescription>{items.length} time slot{items.length !== 1 ? 's' : ''}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {items.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
+                          <Clock className="h-7 w-7 text-indigo-300" />
+                        </div>
+                        <p className="text-muted-foreground">No slots for {label.toLowerCase()}</p>
+                        <Button variant="outline" className="mt-4 gap-2" onClick={() => setIsAddDialogOpen(true)}><Plus className="h-4 w-4" /> Add Slot</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {items.map((slot) => <SlotCard key={slot.id} slot={slot} onDelete={handleDeleteSlot} />)}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
       <Footer />
@@ -238,39 +216,21 @@ export default function AvailabilityPage() {
   );
 }
 
-interface SlotCardProps {
-  slot: TimeSlot;
-  onDelete: (id: string) => void;
-}
-
-function SlotCard({ slot, onDelete }: SlotCardProps) {
-  const isFull = slot.booked >= slot.capacity;
-  const available = slot.capacity - slot.booked;
-
+function SlotCard({ slot, onDelete }: { slot: AvailabilitySlot; onDelete: (id: string) => void }) {
+  const isFull = slot.booked_count >= slot.capacity;
+  const available = slot.capacity - slot.booked_count;
   return (
     <div className={`p-4 rounded-lg border ${isFull ? 'bg-muted/50 border-border' : 'bg-background border-primary/20'}`}>
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-foreground">
-            {slot.startTime} - {slot.endTime}
-          </span>
-          {slot.isAvailableNow && (
-            <Badge className="bg-green-100 text-green-700">Available Now</Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(slot.id)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <span className="font-semibold text-foreground">{formatSlotTime(slot.start_time, slot.end_time)}</span>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(slot.id)}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-1 text-muted-foreground">
           <Users className="h-4 w-4" />
-          <span>{slot.booked} / {slot.capacity} booked</span>
+          <span>{slot.booked_count} / {slot.capacity} booked</span>
         </div>
         {isFull ? (
           <Badge variant="secondary">Full</Badge>

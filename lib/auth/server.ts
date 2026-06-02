@@ -15,6 +15,7 @@ type UserProfile = {
   email: string;
   name: string | null;
   phone: string | null;
+  avatar_url?: string | null;
   role: AccountRole;
   onboarding_completed: boolean;
 };
@@ -90,7 +91,8 @@ export async function getCurrentAccount(
     console.error('users role fetch error:', profileError);
   }
 
-  let role = normalizeAccountRole(profile?.role ?? metadataRole);
+  let role: AccountRole =
+    normalizeAccountRole(profile?.role) === 'business' || metadataRole === 'business' ? 'business' : 'user';
   let onboardingCompleted = Boolean(profile?.onboarding_completed);
   const { data: provider } = await supabase
     .from('providers')
@@ -108,6 +110,7 @@ export async function getCurrentAccount(
     profile: profile
       ? {
           ...profile,
+          avatar_url: null,
           role,
           onboarding_completed: onboardingCompleted,
         }

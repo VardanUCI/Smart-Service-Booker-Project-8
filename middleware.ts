@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
     '/provider/requests',
     '/provider/availability',
     '/notifications',
+    '/account',
   ]
   const providerOnlyPrefixes = [
     '/provider/onboarding',

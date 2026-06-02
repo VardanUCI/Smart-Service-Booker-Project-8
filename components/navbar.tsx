@@ -4,12 +4,24 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Building2, LogOut, Menu, Bell, Clock, User } from 'lucide-react';
+import { Building2, LogOut, Menu, Bell, User, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { mockNotifications } from '@/lib/mock-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { BrandLogo } from '@/components/brand-logo';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type NavbarAccount = {
+  id: string;
   email: string | null;
+  name: string | null;
+  avatarUrl: string | null;
   role: 'user' | 'business';
   emailVerified: boolean;
   onboardingCompleted: boolean;
@@ -17,10 +29,30 @@ type NavbarAccount = {
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/notifications', { headers: { 'Content-Type': 'application/json' } })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data: { notifications: { read: boolean }[] }) => {
+        setUnreadNotificationCount(data.notifications.filter((n) => !n.read).length);
+      })
+      .catch(() => {
+        // Not signed in or fetch failed — badge stays at 0
+      });
+  }, []);
   const [account, setAccount] = useState<NavbarAccount | null>(null);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-  const unreadNotificationCount = mockNotifications.filter((notification) => !notification.read).length;
   const isSignedIn = Boolean(account);
+  const accountLabel = account?.name || account?.email || 'Account';
+  const accountInitials = useMemo(() => {
+    return accountLabel
+      .split(/\s|@/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('');
+  }, [accountLabel]);
 
   useEffect(() => {
     let isMounted = true;
@@ -64,15 +96,12 @@ export function Navbar() {
   }, [account?.onboardingCompleted, account?.role, isSignedIn]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-white">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, #4f46e5, #2563eb)' }}>
-              <Clock className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-semibold tracking-tight text-foreground">Smart Service Booker</span>
+            <BrandLogo textClassName="text-xl" />
           </Link>
 
           
@@ -103,22 +132,51 @@ export function Navbar() {
                     <span className="sr-only">Notifications</span>
                   </Button>
                 </Link>
-                <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm">
-                  {account?.role === 'business' ? (
-                    <Building2 className="h-4 w-4 text-primary" />
-                  ) : (
-                    <User className="h-4 w-4 text-primary" />
-                  )}
-                  <span className="max-w-[180px] truncate">
-                    Signed in as {account?.role === 'business' ? 'Business' : 'User'}
-                  </span>
-                </div>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/signout">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </Link>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <Avatar className="h-9 w-9 border border-border">
+                        <AvatarImage src={account?.avatarUrl ?? undefined} alt={accountLabel} />
+                        <AvatarFallback className="text-sm font-semibold text-primary">
+                          {accountInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="sr-only">Open account menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel>
+                      <span className="block truncate">{accountLabel}</span>
+                      <span className="block truncate text-xs font-normal text-muted-foreground">
+                        {account?.email}
+                      </span>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/account">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Account
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={account?.role === 'business' ? '/provider/dashboard' : '/seeker/waitlists'}>
+                        {account?.role === 'business' ? (
+                          <Building2 className="mr-2 h-4 w-4" />
+                        ) : (
+                          <User className="mr-2 h-4 w-4" />
+                        )}
+                        {account?.role === 'business' ? 'Business Dashboard' : 'My Waitlists'}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/signout">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>
@@ -169,13 +227,25 @@ export function Navbar() {
                   {isSignedIn ? (
                     <>
                       <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
-                        {account?.role === 'business' ? (
-                          <Building2 className="h-4 w-4 text-primary" />
-                        ) : (
-                          <User className="h-4 w-4 text-primary" />
-                        )}
-                        <span>Signed in as {account?.role === 'business' ? 'Business' : 'User'}</span>
+                        <Avatar className="h-9 w-9 border border-border">
+                          <AvatarImage src={account?.avatarUrl ?? undefined} alt={accountLabel} />
+                          <AvatarFallback className="text-sm font-semibold text-primary">
+                            {accountInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{accountLabel}</span>
+                          <span className="block truncate text-xs capitalize text-muted-foreground">
+                            {account?.role}
+                          </span>
+                        </span>
                       </div>
+                      <Button asChild variant="outline" className="w-full">
+                        <Link href="/account" onClick={() => setIsOpen(false)}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          Account
+                        </Link>
+                      </Button>
                       <Button asChild variant="outline" className="w-full">
                         <Link href="/signout" onClick={() => setIsOpen(false)}>
                           <LogOut className="mr-2 h-4 w-4" />

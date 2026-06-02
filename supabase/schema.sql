@@ -9,6 +9,7 @@ CREATE TABLE public.users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   phone TEXT,
+  avatar_url TEXT,
   email TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'business')),
   onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,

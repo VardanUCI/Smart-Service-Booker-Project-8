@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { FormEvent, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Clock, UserPlus, Building2, User } from 'lucide-react';
+import { UserPlus, Building2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/password-input';
+import { BrandLogo } from '@/components/brand-logo';
 
 type AccountType = 'user' | 'business';
 
@@ -42,6 +43,9 @@ function SignUpContent() {
     event.preventDefault();
     setError('');
     setSuccessMessage('');
+    const formData = new FormData(event.currentTarget);
+    const selectedAccountType: AccountType = formData.get('accountType') === 'business' ? 'business' : 'user';
+    setAccountType(selectedAccountType);
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
@@ -61,10 +65,12 @@ function SignUpContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          businessLocation: accountType === 'business' && businessLocation.trim() ? businessLocation : undefined,
+          businessLocation:
+            selectedAccountType === 'business' && businessLocation.trim() ? businessLocation : undefined,
           email,
           phone: phone.trim() ? phone : undefined,
-          role: accountType,
+          role: selectedAccountType,
+          accountType: selectedAccountType,
           password,
         }),
       });
@@ -87,7 +93,7 @@ function SignUpContent() {
         return;
       }
 
-      if (accountType === 'business') {
+      if (selectedAccountType === 'business') {
         router.replace('/provider/onboarding');
       } else {
         router.replace(getSafeRedirect(nextPath));
@@ -122,13 +128,7 @@ function SignUpContent() {
     >
       <div className="mx-auto w-full max-w-md">
         <Link href="/" className="mb-8 inline-flex items-center gap-2 text-white/90 hover:text-white">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg"
-            style={{ background: 'linear-gradient(135deg, #4f46e5, #2563eb)' }}
-          >
-            <Clock className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-semibold">Smart Service Booker</span>
+          <BrandLogo textClassName="text-white" />
         </Link>
 
         <Card className="border-white/20 bg-white/95 backdrop-blur">
