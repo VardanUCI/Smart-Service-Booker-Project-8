@@ -3,12 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import Image from 'next/image';
-import { Search, MapPin, Clock, Home, LocateFixed, Loader2, Check } from 'lucide-react';
+import { Search, MapPin, Clock, Home, LocateFixed, Loader2, Check, Zap, AlertTriangle, CheckCircle } from 'lucide-react';
 import { categories, urgencyLevels, serviceTypes, CategoryId } from '@/lib/constants';
+import { apiFetch } from '@/lib/api';
 
 export default function SearchPage() {
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -22,6 +28,15 @@ export default function SearchPage() {
   const [urgency, setUrgency] = useState('today');
   const [atMyLocation, setAtMyLocation] = useState(false);
   const [service, setService] = useState('any');
+
+  // Model C: Dispatch form state
+  const [showDispatchForm, setShowDispatchForm] = useState(false);
+  const [dispatchDescription, setDispatchDescription] = useState('');
+  const [dispatchExpiry, setDispatchExpiry] = useState<number>(30);
+  const [dispatchLoading, setDispatchLoading] = useState(false);
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
+  const [dispatchSuccess, setDispatchSuccess] = useState(false);
+  const [dispatchNotified, setDispatchNotified] = useState(0);
 
   const effectiveServices = selectedCategory ? (serviceTypes[selectedCategory] ?? []) : [];
 
@@ -79,6 +94,48 @@ export default function SearchPage() {
     if (urgency) params.set('urgency', urgency);
     if (atMyLocation) params.set('mobile', 'true');
     return `/seeker/results?${params.toString()}`;
+  };
+
+  const handleDispatchSubmit = async () => {
+    if (!selectedCategory) { setDispatchError('Please select a category'); return; }
+    if (!location && !gpsCoords) { setDispatchError('Please enter your location'); return; }
+
+    setDispatchLoading(true);
+    setDispatchError(null);
+
+    try {
+      let lat: number, lng: number;
+      if (gpsCoords) {
+        lat = gpsCoords.lat;
+        lng = gpsCoords.lng;
+      } else {
+        const geo = await apiFetch<{ lat: number; lng: number }>('/api/geocode', {
+          method: 'POST',
+          body: JSON.stringify({ location }),
+        });
+        lat = geo.lat;
+        lng = geo.lng;
+      }
+
+      const data = await apiFetch<{ dispatch: { id: string }; notified_count: number }>('/api/dispatch', {
+        method: 'POST',
+        body: JSON.stringify({
+          category: selectedCategory,
+          description: dispatchDescription || undefined,
+          address: location || 'My Location',
+          latitude: lat,
+          longitude: lng,
+          radius_meters: 10000,
+          expires_in_minutes: dispatchExpiry,
+        }),
+      });
+      setDispatchNotified(data.notified_count);
+      setDispatchSuccess(true);
+    } catch (e) {
+      setDispatchError(e instanceof Error ? e.message : 'Failed to create request');
+    } finally {
+      setDispatchLoading(false);
+    }
   };
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
@@ -304,9 +361,124 @@ export default function SearchPage() {
               </form>
             </CardContent>
           </Card>
+          {/* Model C: "I Need Help NOW" Dispatch Card */}
+          <Card className="max-w-2xl mx-auto mt-6 border-red-200 bg-red-50/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Zap className="h-5 w-5 text-red-500" />
+                Need Help Right Now?
+              </CardTitle>
+              <CardDescription>
+                Post an urgent request and every nearby available provider in your category gets notified instantly.
+                First to accept wins the job.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!showDispatchForm ? (
+                <Button
+                  className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white h-12 text-base"
+                  onClick={() => setShowDispatchForm(true)}
+                >
+                  <AlertTriangle className="h-5 w-5" /> I Need Help NOW
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-3 bg-red-100/60 rounded-lg text-sm text-red-800 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>This will notify all nearby providers in the selected category. Make sure you&apos;ve selected a category and entered your location above.</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dispatch-desc">Describe what you need (optional)</Label>
+                    <Textarea
+                      id="dispatch-desc"
+                      placeholder="e.g., Pipe burst in kitchen, need plumber ASAP"
+                      value={dispatchDescription}
+                      onChange={(e) => setDispatchDescription(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>How long should this stay open?</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { value: 30, label: '30 min' },
+                        { value: 60, label: '1 hour' },
+                        { value: 120, label: '2 hours' },
+                        { value: 240, label: '4 hours' },
+                      ].map((opt) => (
+                        <label
+                          key={opt.value}
+                          className={`flex items-center justify-center p-2 rounded-lg border text-sm font-medium cursor-pointer transition-all ${
+                            dispatchExpiry === opt.value
+                              ? 'border-red-500 bg-red-50 text-red-700 ring-1 ring-red-500'
+                              : 'border-border hover:border-red-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="dispatch-expiry"
+                            value={opt.value}
+                            checked={dispatchExpiry === opt.value}
+                            onChange={() => setDispatchExpiry(opt.value)}
+                            className="sr-only"
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {dispatchError && <p className="text-sm text-destructive">{dispatchError}</p>}
+
+                  <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowDispatchForm(false)}>Cancel</Button>
+                    <Button
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white gap-2"
+                      onClick={() => void handleDispatchSubmit()}
+                      disabled={dispatchLoading}
+                    >
+                      {dispatchLoading
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <><Zap className="h-4 w-4" /> Send Urgent Request</>
+                      }
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
       <Footer />
+
+      {/* Dispatch Success Dialog */}
+      <Dialog open={dispatchSuccess} onOpenChange={(open) => { setDispatchSuccess(open); if (!open) { setShowDispatchForm(false); setDispatchDescription(''); } }}>
+        <DialogContent>
+          <div className="text-center py-6">
+            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-center">Request Sent!</DialogTitle>
+              <DialogDescription className="text-center">
+                Your urgent request has been posted. {dispatchNotified > 0
+                  ? `${dispatchNotified} provider${dispatchNotified !== 1 ? 's' : ''} nearby have been notified.`
+                  : 'Providers in your area will see it shortly.'
+                }
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground mt-3">
+              The first provider to accept will be automatically assigned. Track your request on the waitlists page.
+            </p>
+            <DialogFooter className="mt-6 sm:justify-center gap-2">
+              <Button variant="outline" onClick={() => setDispatchSuccess(false)}>Keep Searching</Button>
+              <Button onClick={() => { window.location.href = '/seeker/waitlists'; }}>Track My Request</Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

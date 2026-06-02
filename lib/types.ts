@@ -79,6 +79,46 @@ export interface ProviderResult {
   longitude?: number;
 }
 
+/** Dispatch request (Model C) */
+export interface DispatchRequest {
+  id: string;
+  customer_id: string;
+  category: string;
+  description: string | null;
+  address: string;
+  radius_meters: number;
+  status: 'open' | 'claimed' | 'expired';
+  claimed_by: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+/** Provider-facing dispatch (from get_open_dispatch_requests_for_provider RPC) */
+export interface ProviderDispatchRequest {
+  id: string;
+  category: string;
+  description: string | null;
+  address: string;
+  status: string;
+  expires_at: string;
+  created_at: string;
+  dist_meters?: number;
+}
+
+/** Booking with provider/slot details (from GET /api/bookings) */
+export interface BookingEntry {
+  id: string;
+  provider_id: string;
+  customer_id: string;
+  waitlist_id: string | null;
+  slot_id: string | null;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'declined';
+  notes: string | null;
+  created_at: string;
+  provider: { id: string; business_name: string; category: string } | null;
+  slot: { id: string; date: string; start_time: string; end_time: string } | null;
+}
+
 /** Maps DB waitlist status → UI status */
 export function mapWaitlistStatus(status: string): 'active' | 'ready' | 'expired' | 'completed' {
   switch (status) {

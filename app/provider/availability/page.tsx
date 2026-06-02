@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Clock, Users, Zap, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Clock, Users, Zap, Trash2, Loader2, UserCheck, Hand } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import type { AvailabilitySlot } from '@/lib/types';
 import { formatSlotTime, getTodayTomorrow } from '@/lib/types';
@@ -23,12 +23,16 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAvailableNow, setIsAvailableNow] = useState(false);
-  const [togglingAvail, setTogglingAvail] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [addLoading, setAddLoading] = useState(false);
   const { today, tomorrow } = getTodayTomorrow();
   const [newSlot, setNewSlot] = useState({ date: today, start_time: '09:00', end_time: '10:00', capacity: 1 });
+
+  // "I Have One Opening" state (Model B)
+  const [openSlotLoading, setOpenSlotLoading] = useState(false);
+  const [openSlotResult, setOpenSlotResult] = useState<{ matched: boolean; customerName?: string; message?: string } | null>(null);
+  const [showOpenSlotDialog, setShowOpenSlotDialog] = useState(false);
 
   useEffect(() => {
     void load();
@@ -77,19 +81,28 @@ export default function AvailabilityPage() {
     }
   };
 
-  const handleToggleAvailableNow = async (checked: boolean) => {
-    setTogglingAvail(true);
+  const handleOpenOneSlot = async () => {
+    setOpenSlotLoading(true);
+    setOpenSlotResult(null);
     try {
-      await apiFetch('/api/providers', {
-        method: 'PATCH',
-        body: JSON.stringify({ is_available: checked, available_until: null }),
+      const data = await apiFetch<{ matched: boolean; message?: string; booking?: { id: string }; waitlist_entry?: { contact_value?: string } }>('/api/providers/open-slot', {
+        method: 'POST',
       });
-      setIsAvailableNow(checked);
+      setOpenSlotResult({
+        matched: data.matched,
+        customerName: data.waitlist_entry?.contact_value ?? undefined,
+        message: data.message ?? undefined,
+      });
+      setShowOpenSlotDialog(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update availability');
+      setError(e instanceof Error ? e.message : 'Failed to open slot');
     } finally {
-      setTogglingAvail(false);
+      setOpenSlotLoading(false);
     }
+  };
+
+  const handleToggleAvailableNow = (checked: boolean) => {
+    setIsAvailableNow(checked);
   };
 
   const todaySlots = slots.filter((s) => s.date === today);
@@ -167,8 +180,8 @@ export default function AvailabilityPage() {
                     <p className="text-sm text-muted-foreground">Accept walk-ins and urgent requests immediately</p>
                   </div>
                 </div>
-                <Switch id="available-now" checked={isAvailableNow} disabled={togglingAvail}
-                  onCheckedChange={(v) => void handleToggleAvailableNow(v)} className="scale-125" />
+                <Switch id="available-now" checked={isAvailableNow}
+                  onCheckedChange={handleToggleAvailableNow} className="scale-125" />
               </div>
               {isAvailableNow && (
                 <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
@@ -177,6 +190,70 @@ export default function AvailabilityPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Model B: "I Have One Opening" Card */}
+          <Card className="mb-6">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <Hand className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">I Have One Opening</p>
+                    <p className="text-sm text-muted-foreground">Someone cancelled or left early? Notify the next person on your waitlist</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => void handleOpenOneSlot()}
+                  disabled={openSlotLoading}
+                  className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {openSlotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserCheck className="h-4 w-4" /> Notify Next</>}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Open Slot Result Dialog */}
+          <Dialog open={showOpenSlotDialog} onOpenChange={setShowOpenSlotDialog}>
+            <DialogContent>
+              {openSlotResult?.matched ? (
+                <div className="text-center py-6">
+                  <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                    <UserCheck className="h-8 w-8 text-green-600" />
+                  </div>
+                  <DialogHeader>
+                    <DialogTitle className="text-center">Customer Notified!</DialogTitle>
+                    <DialogDescription className="text-center">
+                      The next person on your waitlist has been selected and notified. They have 15 minutes to confirm their appointment.
+                      {openSlotResult.customerName && (
+                        <span className="block mt-2 font-medium text-foreground">{openSlotResult.customerName}</span>
+                      )}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="mt-6">
+                    <Button onClick={() => setShowOpenSlotDialog(false)}>Got it</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <DialogHeader>
+                    <DialogTitle className="text-center">No One Waiting</DialogTitle>
+                    <DialogDescription className="text-center">
+                      {openSlotResult?.message ?? 'No one is currently on your waitlist. When customers join, you can use this to instantly notify the next person.'}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="mt-6">
+                    <Button variant="outline" onClick={() => setShowOpenSlotDialog(false)}>OK</Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {loading ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
