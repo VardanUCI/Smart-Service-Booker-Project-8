@@ -28,7 +28,7 @@ export function JoinWaitlistDialog({
 }: JoinWaitlistDialogProps) {
   const router = useRouter();
   const [step, setStep] = useState<'review' | 'contact' | 'success'>('review');
-  const [contactMethod, setContactMethod] = useState<'sms' | 'email'>('sms');
+  const [contactMethod, setContactMethod] = useState<'sms' | 'email'>('email');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

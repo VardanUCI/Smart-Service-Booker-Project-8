@@ -55,11 +55,15 @@ export async function PATCH(
       .eq('id', account.user.id)
       .maybeSingle();
     const businessName = provider?.business_name ?? 'Your service provider';
-    sendYoureNextEmail(
-      entry.contact_value,
-      businessName,
-      entry.service ?? entry.category,
-    ).catch((err) => console.error('notify email error:', err));
+    try {
+      await sendYoureNextEmail(
+        entry.contact_value,
+        businessName,
+        entry.service ?? entry.category,
+      );
+    } catch (err) {
+      console.error('notify email error:', err);
+    }
   }
 
   return NextResponse.json({ success: true }, { status: 200 });

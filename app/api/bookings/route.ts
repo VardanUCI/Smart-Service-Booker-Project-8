@@ -100,11 +100,15 @@ export async function POST(request: NextRequest) {
         .eq('id', account.user.id)
         .maybeSingle();
       const businessName = provider?.business_name ?? 'Your service provider';
-      sendSpotAvailableEmail(
-        waitlist.contact_value,
-        businessName,
-        waitlist.service ?? waitlist.category,
-      ).catch((err) => console.error('booking confirmation email error:', err));
+      try {
+        await sendSpotAvailableEmail(
+          waitlist.contact_value,
+          businessName,
+          waitlist.service ?? waitlist.category,
+        );
+      } catch (err) {
+        console.error('booking confirmation email error:', err);
+      }
     }
 
     return NextResponse.json({ booking }, { status: 201 });
